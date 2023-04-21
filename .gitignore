@@ -8,6 +8,5 @@ client/build/
 */yarn-debug.log*
 */yarn-error.log*
 */.pnpm-debug.log*
-db.db
 judge
 key.key
