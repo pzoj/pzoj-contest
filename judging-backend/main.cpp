@@ -1,3 +1,5 @@
+#include <fstream>
+#include <iostream>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -5,7 +7,8 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <string.h>
+#include <string>
+#include <sstream>
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -14,6 +17,7 @@
 #include <sys/user.h>
 #include <sys/reg.h>
 #include <signal.h>
+#include <vector>
 
 #include "syscalls.h"
 #include "checkers.h"
@@ -32,41 +36,34 @@
 #define ABRT 64
 #define DIS_SYS 128
 
-char *input_files[128], *output_files[128];
+std::vector<std::string> input_files, output_files;
+std::string judge_feedback;
 
-char *cleanse_string(char *str, int len) {
-	if (!len) return calloc(1, 1);
+void cleanse_string(std::string &str) {
 	// remove trailing whitespaces and newlines
-	char *ret = malloc((len + 1));
-	strcpy(ret, str);
-	while (len > 0 && (ret[len-1] == ' ' || ret[len-1] == '\n')) {
-		ret[len-1] = '\0';
-		len--;
+	while (str.back() == ' ' || str.back() == '\n') {
+		str.pop_back();
 	}
-	// remove leading whitespaces
-	while (*ret == ' ') {
-		ret++;
-	}
-	return ret;
 }
 
-long long min(long long a, long long b) {
-	return a < b ? a : b;
-}
-
-typedef int (*func_ptr)(char *, char *);
+typedef int (*func_ptr)(std::string &, std::string &);
 func_ptr check;
+
+void pzexit(int status) {
+	std::cout << judge_feedback << std::endl;
+	exit(status);
+}
 
 int main(int argc, char *argv[]) {
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	if (argc != 3) {
-		fprintf(stderr, "invalid number of arguments\n");
+		std::cerr << "invalid number of arguments" << std::endl;
 		return IE;
 	}
 
 	if (chdir(argv[2])) {
-		fprintf(stderr, "failed to chdir\n");
+		std::cerr << "failed to chdir" << std::endl;
 		return IE;
 	}
 
@@ -85,11 +82,11 @@ int main(int argc, char *argv[]) {
 					return CE;
 				}
 			} else {
-				fprintf(stderr, "compiler terminated abnormally\n");
+				std::cerr << "compiler terminated abnormally" << std::endl;
 				return IE;
 			}
 		} else {
-			fprintf(stderr, "fork failed\n");
+			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
 	} else if (strncmp(argv[1], "c", 2) == 0) {
@@ -107,74 +104,79 @@ int main(int argc, char *argv[]) {
 					return CE;
 				}
 			} else {
-				fprintf(stderr, "compiler terminated abnormally\n");
+				std::cerr << "compiler terminated abnormally" << std::endl;
 				return IE;
 			}
 		} else {
-			fprintf(stderr, "fork failed\n");
+			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
 		rename("main.py", "a.out");
 		// prepend #!/usr/bin/env pypy3
-		FILE *f = fopen("a.out", "r+");
-		if (f == NULL) {
-			fprintf(stderr, "failed to open file handle a.out\n");
+		// FILE *f = fopen("a.out", "r+");
+		// if (f == NULL) {
+		// 	std::cerr << "failed to open file handle a.out" << std::endl;
+		// 	return IE;
+		// }
+
+		// char *buf = malloc(65536);
+		// fread(buf, 1, 65536, f);
+		// fseek(f, 0, SEEK_SET);
+		// fprintf(f, "#!/usr/bin/env pypy3\n");
+		// fwrite(buf, 1, strlen(buf), f);
+		// fclose(f);
+		std::fstream f("a.out", std::ios::in | std::ios::out);
+		if (!f.is_open()) {
+			std::cerr << "failed to open file handle a.out" << std::endl;
 			return IE;
 		}
-
-		char *buf = malloc(65536);
-		fread(buf, 1, 65536, f);
-		fseek(f, 0, SEEK_SET);
-		fprintf(f, "#!/usr/bin/env pypy3\n");
-		fwrite(buf, 1, strlen(buf), f);
-		fclose(f);
+		std::string buf;
+		getline(f, buf);
+		f.seekp(0, std::ios::beg);
+		f << "#!/usr/bin/env pypy3\n" << buf;
+		f.close();
 
 		if (chmod("a.out", 0755)) {
-			fprintf(stderr, "failed to chmod a.out\n");
+			std::cerr << "failed to chmod a.out" << std::endl;
 			return IE;
 		}
 	}
 	else {
-		fprintf(stderr, "unknown language\n");
+		std::cerr << "website passed unknown language to judge" << std::endl;
 		return IE;
 	}
 
-	FILE *init = fopen("judge.txt", "r");
-	if (init == NULL) {
-		fprintf(stderr, "failed to open judge file\n");
+	std::fstream init("judge.txt", std::ios::in);
+	if (!init.is_open()) {
+		std::cerr << "failed to open judge file" << std::endl;
 		return IE;
 	}
 
 	int time_limit, memory_limit; // time limit in seconds, memory limit in MB
-	char checker[32];
-	if (fscanf(init, "%d %d %s", &time_limit, &memory_limit, checker) != 3) {
-		fprintf(stderr, "corrupted judge file\n");
+	std::string checker;
+	if (!(init >> time_limit >> memory_limit >> checker)) {
+		std::cerr << "corrupted judge file" << std::endl;
 		return IE;
 	}
 
-	if (strcmp(checker, "identical") == 0) {
-		check = &strcmp;
-	} else if (strcmp(checker, "default") == 0) {
+	if (checker == "identical") {
+		check = &identical_checker;
+	} else if (checker == "default") {
 		check = &default_checker;
 	} else {
-		fprintf(stderr, "unknown checker\n");
+		std::cerr << "unknown checker" << std::endl;
 		return IE;
 	}
 
-	char in[32], out[32];
+	std::string in, out;
 	int numcases = 0;
-	while (fscanf(init, "%s %s", in, out) == 2) {
-		input_files[numcases] = malloc(strlen(in) + 6);
-		output_files[numcases] = malloc(strlen(out) + 6);
-		strcpy(input_files[numcases], "test/");
-		strcpy(output_files[numcases], "test/");
-		strcpy(input_files[numcases]+5, in);
-		strcpy(output_files[numcases]+5, out);
+	while (init >> in >> out) {
+		input_files.push_back("test/" + in);
+		output_files.push_back("test/" + out);
 		numcases++;
 	}
-
-	fclose(init);
+	init.close();
 
 	// goal: run the program and compare the output to the expected output
 	// while also checking for time limit and memory limit
@@ -189,21 +191,21 @@ int main(int argc, char *argv[]) {
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child
-			freopen(input_files[i], "r", stdin);
+			freopen(input_files[i].c_str(), "r", stdin);
 			freopen("output.txt", "w", stdout);
 
 			struct rlimit rlim;
 			rlim.rlim_cur = time_limit;
 			rlim.rlim_max = time_limit + 1;
 			if (setrlimit(RLIMIT_CPU, &rlim)) {
-				fprintf(stderr, "failed to set time limit\n");
+				std::cerr << "failed to set time limit" << std::endl;
 				return IE;
 			}
 			
 			rlim.rlim_cur = 1024 * 1024 * 1024;
 			rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
 			if (setrlimit(RLIMIT_AS, &rlim)) {
-				fprintf(stderr, "failed to set memory limit\n");
+				std::cerr << "failed to set memory limit" << std::endl;
 				return IE;
 			}
 
@@ -225,27 +227,45 @@ int main(int argc, char *argv[]) {
 					time += usage.ru_stime.tv_sec - prev_use.ru_stime.tv_sec + (usage.ru_stime.tv_usec - prev_use.ru_stime.tv_usec) / 1000000.;
 					if (time > time_limit)
 						return TLE;
-					printf("%ld", (long)(time * 1000));
+					judge_feedback += std::to_string((long long)(time * 1000)) + ' ';
 					// check output
-					FILE *f = fopen("output.txt", "r");
-					char *ptr1 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
-					fseek(f, 0, SEEK_END);
-					char *tptr1 = cleanse_string(ptr1, ftell(f));
-					munmap(ptr1, 0x1000000);
-					fclose(f);
-					f = fopen(output_files[i], "r");
-					char *ptr2 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
-					fseek(f, 0, SEEK_END);
-					char *tptr2 = cleanse_string(ptr2, ftell(f));
-					munmap(ptr2, 0x1000000);
-					fclose(f);
-					if (!(*check)(tptr1, tptr2)) {
-						printf(" WA\n");
-						return WA;
+					// FILE *f = fopen("output.txt", "r");
+					// char *ptr1 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
+					// fseek(f, 0, SEEK_END);
+					// char *tptr1 = cleanse_string(ptr1, ftell(f));
+					// munmap(ptr1, 0x1000000);
+					// fclose(f);
+					// f = fopen(output_files[i], "r");
+					// char *ptr2 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
+					// fseek(f, 0, SEEK_END);
+					// char *tptr2 = cleanse_string(ptr2, ftell(f));
+					// munmap(ptr2, 0x1000000);
+					// fclose(f);
+					std::fstream f("output.txt", std::ios::in);
+					if (!f.is_open()) {
+						std::cerr << "failed to open output.txt" << std::endl;
+						return IE;
 					}
-					printf("\n");
-					free(tptr1);
-					free(tptr2);
+					std::string tptr1, tptr2;
+					std::stringstream buffer;
+					// dump full contents of f into tptr1
+					buffer << f.rdbuf();
+					tptr1 = buffer.str();
+					f.close();
+					f.open(output_files[i], std::ios::in);
+					if (!f.is_open()) {
+						std::cerr << "failed to open output file" << std::endl;
+						return IE;
+					}
+					buffer.str("");
+					buffer << f.rdbuf();
+					tptr2 = buffer.str();
+					f.close();
+
+					if (!(*check)(tptr1, tptr2)) {
+						judge_feedback = "WA " + judge_feedback;
+						pzexit(WA);
+					}
 					break;
 				} else if (WIFSIGNALED(status)) {
 					int sig = WEXITSTATUS(status);
@@ -258,7 +278,7 @@ int main(int argc, char *argv[]) {
 					} else if (sig == SIGABRT) {
 						return RTE | ABRT;
 					} else {
-						fprintf(stderr, "unknown signal %d\n", sig);
+						std::cerr << "unknown signal " << sig << std::endl;
 						return RTE;
 					}
 				} else if (WIFSTOPPED(status)) {
@@ -272,7 +292,7 @@ int main(int argc, char *argv[]) {
 							sprintf(path, "/proc/%d/status", pid);
 							FILE *f = fopen(path, "r");
 							if (f == NULL) {
-								fprintf(stderr, "failed to open /proc/pid/status\n");
+								std::cerr << "failed to open /proc/pid/status" << std::endl;
 								return IE;
 							}
 
@@ -281,7 +301,7 @@ int main(int argc, char *argv[]) {
 								if (strncmp(buf, "VmPeak:", 7) == 0) {
 									int mem;
 									if (sscanf(buf, "VmPeak: %d kB ", &mem) != 1) {
-										fprintf(stderr, "failed to read memory usage\n");
+										std::cerr << "failed to read memory usage" << std::endl;
 										return IE;
 									}
 									if (mem > memory_limit * 1024) {
@@ -296,7 +316,7 @@ int main(int argc, char *argv[]) {
 						if (syscall_allowed(rax)) {
 							ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 						} else {
-							fprintf(stderr, "disallowed syscall %lld\n", rax);
+							std::cerr << "disallowed syscall " << rax << std::endl;
 							kill(pid, SIGKILL);
 							return RTE | DIS_SYS;
 						}
@@ -311,17 +331,17 @@ int main(int argc, char *argv[]) {
 						} else if (sig == SIGABRT) {
 							return RTE | ABRT;
 						} else {
-							fprintf(stderr, "unknown signal %d\n", sig);
+							std::cerr << "unknown signal " << sig << std::endl;
 							return RTE;
 						}
 					}
 				} else {
-					fprintf(stderr, "program terminated abnormally\n");
+					std::cerr << "program terminated abnormally" << std::endl;
 					return RTE;
 				}
 			}
 		} else {
-			fprintf(stderr, "fork failed\n");
+			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
 	}

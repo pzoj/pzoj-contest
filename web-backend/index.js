@@ -423,5 +423,5 @@ app.get('/api/courses/:cid', (req, res) => {
 /* ------------------ LISTENING ------------------ */
 
 app.listen(3001, () => {
-	console.log('Server started');
+	console.log(`Server started on port 3001`);
 });
