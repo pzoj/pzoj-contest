@@ -1,7 +1,7 @@
 #include "checkers.h"
 
 bool default_checker(std::string &output, std::string &expected_output) {
-	vector<std::string> tok_output, tok_expected_output;
+	std::vector<std::string> tok_output, tok_expected_output;
 	std::string curr = "";
 	for (int i = 0; i <= output.size(); i++) {
 		if (i == output.size() || ((output[i] == ' ' || output[i] == '\n') && !curr.empty())) {
