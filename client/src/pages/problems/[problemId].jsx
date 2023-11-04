@@ -182,15 +182,15 @@ export default () => {
                                     return;
                                 }
                                 msg = msg.split(" ");
+                                if (msg[0] == "FIN") {
+                                    setVerdict(msg[1]);
+                                    return;
+                                }
                                 msg = {
                                     verdict: msg[0],
                                     memory: msg[1],
                                     time: msg[2],
                                 };
-                                if (msg.memory === undefined || msg.time === undefined) {
-                                    setVerdict(msg.verdict);
-                                    return;
-                                }
                                 results.push(msg);
                                 setResults([...results]);
                             };

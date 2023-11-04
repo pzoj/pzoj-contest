@@ -1,5 +1,8 @@
 .vscode/
 
+/problems
+db.db
+
 */node_modules/
 */.next/
 client/build/
