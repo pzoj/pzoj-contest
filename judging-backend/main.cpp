@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <string>
+#include <string.h>
 #include <sstream>
 #include <sys/mman.h>
 #include <stdlib.h>
@@ -20,7 +21,7 @@
 #include <vector>
 
 #include "syscalls.h"
-#include "checkers.h"
+#include "checkers.hpp"
 
 #define AC 0
 #define WA 1
@@ -30,11 +31,11 @@
 #define OLE 5
 #define CE 6
 #define IR 7
-#define RTE 8
-#define SEGV 16
-#define FPE 32
-#define ABRT 64
-#define DIS_SYS 128
+#define RTE 0x08
+#define SEGV 0x10
+#define FPE 0x20
+#define ABRT 0x40
+#define DIS_SYS 0x80
 
 std::vector<std::string> input_files, output_files;
 std::string judge_feedback;
@@ -46,12 +47,35 @@ void cleanse_string(std::string &str) {
 	}
 }
 
-typedef int (*func_ptr)(std::string &, std::string &);
+typedef bool (*func_ptr)(std::string &, std::string &);
 func_ptr check;
 
 void pzexit(int status) {
 	std::cout << judge_feedback << std::endl;
 	exit(status);
+}
+
+int get_memory(int pid) {
+	std::string path = "/proc/" + std::to_string(pid) + "/status";
+	std::fstream f(path, std::ios::in);
+	if (!f.is_open()) {
+		std::cerr << "failed to open /proc/pid/status" << std::endl;
+		return IE;
+	}
+
+	std::string buf;
+	int mem;
+	while (getline(f, buf)) {
+		if (strncmp(buf.c_str(), "VmPeak:", 7) == 0) {
+			if (sscanf(buf.c_str(), "VmPeak: %d kB ", &mem) != 1) {
+				std::cerr << "failed to read memory usage" << std::endl;
+				return IE;
+			}
+			break;
+		}
+	}
+	f.close();
+	return mem;
 }
 
 int main(int argc, char *argv[]) {
@@ -114,28 +138,18 @@ int main(int argc, char *argv[]) {
 	} else if (strncmp(argv[1], "py", 3) == 0) {
 		rename("main.py", "a.out");
 		// prepend #!/usr/bin/env pypy3
-		// FILE *f = fopen("a.out", "r+");
-		// if (f == NULL) {
-		// 	std::cerr << "failed to open file handle a.out" << std::endl;
-		// 	return IE;
-		// }
-
-		// char *buf = malloc(65536);
-		// fread(buf, 1, 65536, f);
-		// fseek(f, 0, SEEK_SET);
-		// fprintf(f, "#!/usr/bin/env pypy3\n");
-		// fwrite(buf, 1, strlen(buf), f);
-		// fclose(f);
-		std::fstream f("a.out", std::ios::in | std::ios::out);
-		if (!f.is_open()) {
+		FILE *f = fopen("a.out", "r+");
+		if (f == NULL) {
 			std::cerr << "failed to open file handle a.out" << std::endl;
 			return IE;
 		}
-		std::string buf;
-		getline(f, buf);
-		f.seekp(0, std::ios::beg);
-		f << "#!/usr/bin/env pypy3\n" << buf;
-		f.close();
+
+		char *buf = (char *)malloc(65536);
+		fread(buf, 1, 65536, f);
+		fseek(f, 0, SEEK_SET);
+		fprintf(f, "#!/usr/bin/env pypy3\n");
+		fwrite(buf, 1, strlen(buf), f);
+		fclose(f);
 
 		if (chmod("a.out", 0755)) {
 			std::cerr << "failed to chmod a.out" << std::endl;
@@ -153,7 +167,7 @@ int main(int argc, char *argv[]) {
 		return IE;
 	}
 
-	int time_limit, memory_limit; // time limit in seconds, memory limit in MB
+	int time_limit, memory_limit; // time limit in milliseconds, memory limit in MB
 	std::string checker;
 	if (!(init >> time_limit >> memory_limit >> checker)) {
 		std::cerr << "corrupted judge file" << std::endl;
@@ -195,8 +209,8 @@ int main(int argc, char *argv[]) {
 			freopen("output.txt", "w", stdout);
 
 			struct rlimit rlim;
-			rlim.rlim_cur = time_limit;
-			rlim.rlim_max = time_limit + 1;
+			rlim.rlim_cur = (time_limit + 999) / 1000;
+			rlim.rlim_max = (time_limit + 999) / 1000 + 1;
 			if (setrlimit(RLIMIT_CPU, &rlim)) {
 				std::cerr << "failed to set time limit" << std::endl;
 				return IE;
@@ -208,7 +222,6 @@ int main(int argc, char *argv[]) {
 				std::cerr << "failed to set memory limit" << std::endl;
 				return IE;
 			}
-
 			ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 			execl("./a.out", "./a.out", NULL);
 		} else if (pid > 0) {
@@ -223,24 +236,13 @@ int main(int argc, char *argv[]) {
 					}
 					struct rusage usage;
 					getrusage(RUSAGE_CHILDREN, &usage);
-					double time = usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000000.;
-					time += usage.ru_stime.tv_sec - prev_use.ru_stime.tv_sec + (usage.ru_stime.tv_usec - prev_use.ru_stime.tv_usec) / 1000000.;
-					if (time > time_limit)
-						return TLE;
-					judge_feedback += std::to_string((long long)(time * 1000)) + ' ';
+					time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000;
+					if (time > time_limit) {
+						judge_feedback = "TLE " + judge_feedback;
+						pzexit(TLE);
+					}
+					judge_feedback += std::to_string(time) + ' ';
 					// check output
-					// FILE *f = fopen("output.txt", "r");
-					// char *ptr1 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
-					// fseek(f, 0, SEEK_END);
-					// char *tptr1 = cleanse_string(ptr1, ftell(f));
-					// munmap(ptr1, 0x1000000);
-					// fclose(f);
-					// f = fopen(output_files[i], "r");
-					// char *ptr2 = mmap(0, 0x1000000, PROT_READ, MAP_SHARED, fileno(f), 0);
-					// fseek(f, 0, SEEK_END);
-					// char *tptr2 = cleanse_string(ptr2, ftell(f));
-					// munmap(ptr2, 0x1000000);
-					// fclose(f);
 					std::fstream f("output.txt", std::ios::in);
 					if (!f.is_open()) {
 						std::cerr << "failed to open output.txt" << std::endl;
@@ -268,19 +270,21 @@ int main(int argc, char *argv[]) {
 					}
 					break;
 				} else if (WIFSIGNALED(status)) {
-					int sig = WEXITSTATUS(status);
-					if (sig == SIGXCPU) {
-						return TLE;
-					} else if (sig == SIGSEGV) {
-						return RTE | SEGV;
-					} else if (sig == SIGFPE) {
-						return RTE | FPE;
-					} else if (sig == SIGABRT) {
-						return RTE | ABRT;
-					} else {
-						std::cerr << "unknown signal " << sig << std::endl;
-						return RTE;
-					}
+					// int sig = WEXITSTATUS(status);
+					// if (sig == SIGXCPU) {
+					// 	return TLE;
+					// } else if (sig == SIGSEGV) {
+					// 	return RTE | SEGV;
+					// } else if (sig == SIGFPE) {
+					// 	return RTE | FPE;
+					// } else if (sig == SIGABRT) {
+					// 	return RTE | ABRT;
+					// } else {
+					// 	std::cerr << "unknown signal " << sig << std::endl;
+					// 	return RTE;
+					// }
+					std::cout << "HI!! I EXIST!!!" << std::endl;
+					return RTE;
 				} else if (WIFSTOPPED(status)) {
 					int sig = WSTOPSIG(status);
 					if (sig == SIGTRAP) {
@@ -288,30 +292,16 @@ int main(int argc, char *argv[]) {
 						if (rax == 231 || rax == 60) {
 							// exit
 							// look for memory usage in /proc/pid/status
-							char path[32];
-							sprintf(path, "/proc/%d/status", pid);
-							FILE *f = fopen(path, "r");
-							if (f == NULL) {
-								std::cerr << "failed to open /proc/pid/status" << std::endl;
-								return IE;
+							int mem = get_memory(pid);
+							if (mem > memory_limit * 1024) {
+								judge_feedback = "MLE " + std::to_string(mem) + ' ';
+								struct rusage usage;
+								getrusage(RUSAGE_CHILDREN, &usage);
+								time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000.;
+								judge_feedback += std::to_string(time);
+								pzexit(MLE);
 							}
-
-							char buf[512];
-							while (fgets(buf, 512, f)) {
-								if (strncmp(buf, "VmPeak:", 7) == 0) {
-									int mem;
-									if (sscanf(buf, "VmPeak: %d kB ", &mem) != 1) {
-										std::cerr << "failed to read memory usage" << std::endl;
-										return IE;
-									}
-									if (mem > memory_limit * 1024) {
-										return MLE;
-									}
-									printf("%d ", mem);
-									break;
-								}
-							}
-							fclose(f);
+							judge_feedback += std::to_string(mem) + ' ';
 						}
 						if (syscall_allowed(rax)) {
 							ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -323,13 +313,17 @@ int main(int argc, char *argv[]) {
 					} else {
 						int sig = WEXITSTATUS(status);
 						if (sig == SIGXCPU) {
-							return TLE;
+							judge_feedback = "TLE " + std::to_string(get_memory(pid)) + " " + std::to_string(time_limit + 1);
+							pzexit(TLE);
 						} else if (sig == SIGSEGV) {
-							return RTE | SEGV;
+							judge_feedback = "RTE " + std::to_string(get_memory(pid));
+							pzexit(RTE | SEGV);
 						} else if (sig == SIGFPE) {
-							return RTE | FPE;
+							judge_feedback = "RTE " + std::to_string(get_memory(pid));
+							pzexit(RTE | FPE);
 						} else if (sig == SIGABRT) {
-							return RTE | ABRT;
+							judge_feedback = "RTE " + std::to_string(get_memory(pid));
+							pzexit(RTE | ABRT);
 						} else {
 							std::cerr << "unknown signal " << sig << std::endl;
 							return RTE;
@@ -345,5 +339,6 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	}
-	return AC;
-}	
+	judge_feedback = "AC " + judge_feedback;
+	pzexit(AC);
+}

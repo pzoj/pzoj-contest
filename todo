@@ -1,6 +1,4 @@
-- rewrite checker in C++
 - make some kind of cloud problem db
-- rewrite interactor because its really terrible
-- continue to be salty about the judges of the hackathon who didn't understand what an online judge platform was
 - when probing syscalls, check $rdi for stuff like read/write etc
 - SECCOMP
+- make it so that 2 users cannot submit at the same time 

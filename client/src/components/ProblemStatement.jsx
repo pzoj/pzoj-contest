@@ -21,7 +21,7 @@ export default (props) => {
 		axios.get(`/api/problem/${problemId}/meta`).then((res) => {
 			setTags([res.data.tag]);
 			setDifficulty(parseInt(res.data.difficulty));
-			setTime(parseInt(res.data.time));
+			setTime(parseInt(res.data.time) / 1000);
 			setMemory(parseInt(res.data.memory));
 		}).catch((err) => {
 			console.error(err);

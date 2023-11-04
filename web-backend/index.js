@@ -66,7 +66,7 @@ app.post('/api/login', (req, res) => {
 	let password = req.body.password;
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -80,7 +80,7 @@ app.post('/api/login', (req, res) => {
 		// hash password
 		bcrypt.compare(password, row.password, (err, result) => {
 			if (err) {
-				console.error(err);
+				console.erroror(err);
 				res.status(500);
 				res.end();
 				return;
@@ -103,7 +103,7 @@ app.post('/api/register', (req, res) => {
 	let password = req.body.password;
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -117,7 +117,7 @@ app.post('/api/register', (req, res) => {
 		// hash password
 		bcrypt.hash(password, 10, (err, hash) => {
 			if (err) {
-				console.error(err);
+				console.erroror(err);
 				res.status(500);
 				res.end();
 				return;
@@ -126,7 +126,7 @@ app.post('/api/register', (req, res) => {
 				db.run('BEGIN TRANSACTION');
 				db.run('INSERT INTO users(username, password) VALUES (?, ?)', [username, hash], (err) => {
 					if (err) {
-						console.error(err);
+						console.erroror(err);
 						res.status(500);
 						res.end();
 						db.run('ROLLBACK');
@@ -148,7 +148,7 @@ app.get('/api/user/:username', (req, res) => {
 	// user data
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -163,7 +163,7 @@ app.get('/api/user/:username', (req, res) => {
 		// user submissions
 		db.all('SELECT * FROM submissions WHERE username = ?', [username], (err, rows) => {
 			if (err) {
-				console.error(err);
+				console.erroror(err);
 				res.status(500);
 				res.end();
 				return;
@@ -182,7 +182,7 @@ app.get('/api/problem/:pid', (req, res) => {
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'problem.md'), (err, data) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(404);
 			res.send('Problem not found');
 			return;
@@ -210,19 +210,22 @@ app.get('/api/problem/:pid/meta', (req, res) => {
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'meta.txt'), (err, data) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(404);
 			res.send('Problem not found');
 			return;
 		}
-		data = data.toString().split('\n');
-		res.send({
-			pid: req.params.pid,
-			title: data[0],
-			difficulty: data[1],
-			tag: data[2],
-			time: data[3],
-			memory: data[4],
+		fs.readFile(path.join(problem_path, 'judge.txt'), (err, data2) => {
+			data = data.toString().split('\n');
+			data2 = data2.toString().split(' ');
+			res.send({
+				pid: req.params.pid,
+				title: data[0],
+				difficulty: data[1],
+				tag: data[2],
+				time: data2[0],
+				memory: data2[1],
+			});
 		});
 	});
 });
@@ -244,7 +247,7 @@ app.get('/api/problem/:pid/status', (req, res) => {
 	}
 	db.all('SELECT * FROM submissions WHERE problemid=? AND username=? AND result="AC"', [req.params.pid, username], (err, rows) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -261,7 +264,7 @@ app.get('/api/problem/:pid/editorial', (req, res) => {
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'editorial.md'), (err, data) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(404);
 			res.send('Editorial not found');
 			return;
@@ -275,13 +278,16 @@ app.get('/api/problems', (req, res) => {
 	let problems = [];
 	fs.readdir(path.join(cwd(), '..', 'problems'), (err, files) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
 		}
 		files.forEach((file) => {
-			let tmp = [file, ...fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')];
+			let tmp = [
+				file,
+				...fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')
+			];
 			if (req.query.q && !tmp[0].includes(req.query.q) && !tmp[1].includes(req.query.q))
 				return;
 			problems.push({
@@ -289,8 +295,6 @@ app.get('/api/problems', (req, res) => {
 				title: tmp[1],
 				difficulty: tmp[2],
 				tag: tmp[3],
-				time: tmp[4],
-				memory: tmp[5],
 			});
 		});
 		res.send(JSON.stringify(problems));
@@ -300,7 +304,7 @@ app.get('/api/problems', (req, res) => {
 app.get('/api/problems/random', (req, res) => {
 	fs.readdir(path.join(cwd(), '..', 'problems'), (err, files) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -333,7 +337,6 @@ wss.on('connection', (ws) => {
 			filecontent.replace('\\n', '\n');
 			filecontent.replace('\\t', '\t');
 			filecontent.replace('\\\\', '\\');
-			// filecontent.replace('<< *endl', "<< '\\n'"); // extremely questionable (but prevents ddos)
 			try {
 				fs.writeFileSync(code_path, filecontent);
 			} catch (err) {
@@ -351,7 +354,7 @@ wss.on('connection', (ws) => {
 				db.run('BEGIN IMMEDIATE TRANSACTION');
 				db.run('INSERT INTO submissions (username, problemid, timestamp, time, memory, result) VALUES (?, ?, ?, ?, ?, ?)', [user, data.pid, subtime, ...res], (err) => {
 					if (err) {
-						console.error(err);
+						console.erroror(err);
 						db.run('ROLLBACK');
 						return;
 					}
@@ -368,7 +371,7 @@ app.get('/api/courses', (req, res) => {
 	let courses = [];
 	fs.readdir(path.join(cwd(), '..', 'courses'), (err, files) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -390,7 +393,7 @@ app.get('/api/courses', (req, res) => {
 app.get('/api/courses/:cid/img.png', (req, res) => {
 	fs.readdir(path.join(cwd(), '..', 'courses', req.params.cid), (err, files) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
@@ -410,7 +413,7 @@ app.get('/api/courses/:cid', (req, res) => {
 	let course = {};
 	fs.readFile(path.join(cwd(), '..', 'courses', cid, 'content.md'), (err, data) => {
 		if (err) {
-			console.error(err);
+			console.erroror(err);
 			res.status(500);
 			res.end();
 			return;
