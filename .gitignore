@@ -1,6 +1,6 @@
 .vscode/
 
-problems/
+/problems
 db.db
 
 */node_modules/
