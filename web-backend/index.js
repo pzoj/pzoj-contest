@@ -247,7 +247,7 @@ app.get('/api/problem/:pid/status', (req, res) => {
 	}
 	db.all('SELECT * FROM submissions WHERE problemid=? AND username=? AND result="AC"', [req.params.pid, username], (err, rows) => {
 		if (err) {
-			console.erroror(err);
+			console.error(err);
 			res.status(500);
 			res.end();
 			return;
@@ -278,12 +278,13 @@ app.get('/api/problems', (req, res) => {
 	let problems = [];
 	fs.readdir(path.join(cwd(), '..', 'problems'), (err, files) => {
 		if (err) {
-			console.erroror(err);
+			console.error(err);
 			res.status(500);
 			res.end();
 			return;
 		}
 		files.forEach((file) => {
+			if (file.startsWith('.')) return;
 			let tmp = [
 				file,
 				...fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')

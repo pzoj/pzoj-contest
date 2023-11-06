@@ -8,7 +8,7 @@
 - test case file names cannot be over 32 characters
 - problem.md should contain the problem description
 - judge.txt should contain the problem metadata:
-	- (time_limit (s)) (memory_limit (MB)) (checker_type)
+	- (time_limit (ms)) (memory_limit (MB)) (checker_type)
 	- (input_file) (output_file)
 	...
 - meta.txt should contain the following metadata:

@@ -1,4 +1,4 @@
-- make some kind of cloud problem db
-- when probing syscalls, check $rdi for stuff like read/write etc
-- SECCOMP
-- make it so that 2 users cannot submit at the same time 
+- BETTER ISOLATION + SECURITY
+
+KNOWN ISSUES
+- race condition when 2 users submit at the same time
