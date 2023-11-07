@@ -17,6 +17,7 @@ then
 	else
 		echo "Using custom key..."
 		echo $key > ./web-backend/key.key
+	fi
 fi
 # 1. Build judge
 echo "Building judge..."

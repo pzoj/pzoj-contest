@@ -9,7 +9,7 @@ then
 	do 
 		sleep 1
 	done
-	cp -r ./problems/* ./tmp/problems/
+	cp -r ./problems/* ./tmp/problems/ --verbose
 	cp ./web-backend/db.db ./tmp/db.db
 	umount tmp
 	rm -rf tmp

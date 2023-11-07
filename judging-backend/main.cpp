@@ -38,7 +38,6 @@
 #define DIS_SYS 0x80
 
 std::vector<std::string> input_files, output_files;
-std::string judge_feedback;
 
 void cleanse_string(std::string &str) {
 	// remove trailing whitespaces and newlines
@@ -49,11 +48,6 @@ void cleanse_string(std::string &str) {
 
 typedef bool (*func_ptr)(std::string &, std::string &);
 func_ptr check;
-
-void pzexit(int status) {
-	std::cout << judge_feedback << std::endl;
-	exit(status);
-}
 
 int get_memory(int pid) {
 	std::string path = "/proc/" + std::to_string(pid) + "/status";
@@ -76,6 +70,13 @@ int get_memory(int pid) {
 	}
 	f.close();
 	return mem;
+}
+
+int get_time(struct rusage &prevuse) {
+	struct rusage usage;
+	getrusage(RUSAGE_CHILDREN, &usage);
+	time_t time = (usage.ru_utime.tv_sec - prevuse.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prevuse.ru_utime.tv_usec) / 1000;
+	return time;
 }
 
 int main(int argc, char *argv[]) {
@@ -238,10 +239,10 @@ int main(int argc, char *argv[]) {
 					getrusage(RUSAGE_CHILDREN, &usage);
 					time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000;
 					if (time > time_limit) {
-						judge_feedback = "TLE " + judge_feedback;
-						pzexit(TLE);
+						std::cout << time_limit+1 << std::endl;
+						return TLE;
 					}
-					judge_feedback += std::to_string(time) + ' ';
+					std::cout << time << std::endl;
 					// check output
 					std::fstream f("output.txt", std::ios::in);
 					if (!f.is_open()) {
@@ -259,14 +260,13 @@ int main(int argc, char *argv[]) {
 						std::cerr << "failed to open output file" << std::endl;
 						return IE;
 					}
-					buffer.str("");
+					buffer = std::stringstream();
 					buffer << f.rdbuf();
 					tptr2 = buffer.str();
 					f.close();
 
 					if (!(*check)(tptr1, tptr2)) {
-						judge_feedback = "WA " + judge_feedback;
-						pzexit(WA);
+						return WA;
 					}
 					break;
 				} else if (WIFSIGNALED(status)) {
@@ -294,14 +294,14 @@ int main(int argc, char *argv[]) {
 							// look for memory usage in /proc/pid/status
 							int mem = get_memory(pid);
 							if (mem > memory_limit * 1024) {
-								judge_feedback = "MLE " + std::to_string(mem) + ' ';
+								std::cout << mem << ' ';
 								struct rusage usage;
 								getrusage(RUSAGE_CHILDREN, &usage);
 								time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000.;
-								judge_feedback += std::to_string(time);
-								pzexit(MLE);
+								std::cout << time << std::endl;
+								return MLE;
 							}
-							judge_feedback += std::to_string(mem) + ' ';
+							std::cout << mem << ' ';
 						}
 						if (syscall_allowed(rax)) {
 							ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
@@ -313,17 +313,17 @@ int main(int argc, char *argv[]) {
 					} else {
 						int sig = WEXITSTATUS(status);
 						if (sig == SIGXCPU) {
-							judge_feedback = "TLE " + std::to_string(get_memory(pid)) + " " + std::to_string(time_limit + 1);
-							pzexit(TLE);
+							std::cout << get_memory(pid) << ' ' << time_limit+1 << std::endl;
+							return TLE;
 						} else if (sig == SIGSEGV) {
-							judge_feedback = "RTE " + std::to_string(get_memory(pid));
-							pzexit(RTE | SEGV);
+							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
+							return RTE | SEGV;
 						} else if (sig == SIGFPE) {
-							judge_feedback = "RTE " + std::to_string(get_memory(pid));
-							pzexit(RTE | FPE);
+							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
+							return RTE | FPE;
 						} else if (sig == SIGABRT) {
-							judge_feedback = "RTE " + std::to_string(get_memory(pid));
-							pzexit(RTE | ABRT);
+							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
+							return RTE | ABRT;
 						} else {
 							std::cerr << "unknown signal " << sig << std::endl;
 							return RTE;
@@ -339,6 +339,6 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	}
-	judge_feedback = "AC " + judge_feedback;
-	pzexit(AC);
+
+	return AC;
 }
