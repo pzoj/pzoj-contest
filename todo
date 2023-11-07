@@ -2,3 +2,4 @@
 
 KNOWN ISSUES
 - race condition when 2 users submit at the same time
+- RMT refuses to work (blank output) for some reason, output.txt is empty

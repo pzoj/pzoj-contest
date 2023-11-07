@@ -72,7 +72,7 @@ int get_memory(int pid) {
 	return mem;
 }
 
-int get_time(struct rusage &prevuse) {
+uint64_t get_time(struct rusage &prevuse) {
 	struct rusage usage;
 	getrusage(RUSAGE_CHILDREN, &usage);
 	time_t time = (usage.ru_utime.tv_sec - prevuse.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prevuse.ru_utime.tv_usec) / 1000;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
 			// child
 			freopen(input_files[i].c_str(), "r", stdin);
 			freopen("output.txt", "w", stdout);
-
+			
 			struct rlimit rlim;
 			rlim.rlim_cur = (time_limit + 999) / 1000;
 			rlim.rlim_max = (time_limit + 999) / 1000 + 1;
@@ -233,11 +233,10 @@ int main(int argc, char *argv[]) {
 				waitpid(pid, &status, 0);
 				if (WIFEXITED(status)) {
 					if (WEXITSTATUS(status) != 0) {
+						std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
 						return IR;
 					}
-					struct rusage usage;
-					getrusage(RUSAGE_CHILDREN, &usage);
-					time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000;
+					uint64_t time = get_time(prev_use);
 					if (time > time_limit) {
 						std::cout << time_limit+1 << std::endl;
 						return TLE;
@@ -269,22 +268,6 @@ int main(int argc, char *argv[]) {
 						return WA;
 					}
 					break;
-				} else if (WIFSIGNALED(status)) {
-					// int sig = WEXITSTATUS(status);
-					// if (sig == SIGXCPU) {
-					// 	return TLE;
-					// } else if (sig == SIGSEGV) {
-					// 	return RTE | SEGV;
-					// } else if (sig == SIGFPE) {
-					// 	return RTE | FPE;
-					// } else if (sig == SIGABRT) {
-					// 	return RTE | ABRT;
-					// } else {
-					// 	std::cerr << "unknown signal " << sig << std::endl;
-					// 	return RTE;
-					// }
-					std::cout << "HI!! I EXIST!!!" << std::endl;
-					return RTE;
 				} else if (WIFSTOPPED(status)) {
 					int sig = WSTOPSIG(status);
 					if (sig == SIGTRAP) {
@@ -325,7 +308,7 @@ int main(int argc, char *argv[]) {
 							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
 							return RTE | ABRT;
 						} else {
-							std::cerr << "unknown signal " << sig << std::endl;
+							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
 							return RTE;
 						}
 					}
