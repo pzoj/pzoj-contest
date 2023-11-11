@@ -79,7 +79,12 @@ uint64_t get_time(struct rusage &prevuse) {
 	return time;
 }
 
+void rm_lock() {
+	remove(".lock");
+}
+
 int main(int argc, char *argv[]) {
+	std::atexit(rm_lock);
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	if (argc != 3) {
@@ -91,12 +96,32 @@ int main(int argc, char *argv[]) {
 		std::cerr << "failed to chdir" << std::endl;
 		return IE;
 	}
+	
+	struct stat buffer;
+	int tries = 0;
+	while (stat(".lock", &buffer) == 0) {
+		sleep(1);
+		tries++;
+		if (tries > 600) { 
+			std::cerr << "judging timed out" << std::endl;
+			return IE;
+		}
+	}
+
+	// create lock file to indicate judging is in progress
+	FILE *lock = fopen(".lock", "w");
+	if (lock == NULL) {
+		std::cerr << "failed to create lock file" << std::endl;
+		return IE;
+	}
+	fclose(lock);
 
 	if (strncmp(argv[1], "cpp", 4) == 0) {
 		// compile C++ program
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
+			freopen("/dev/null", "w", stderr);
 			execl("/usr/bin/g++", "/usr/bin/g++", "main.cpp", "-std=c++20", NULL);
 		} else if (pid > 0) {
 			// parent process
@@ -119,6 +144,7 @@ int main(int argc, char *argv[]) {
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
+			freopen("/dev/null", "w", stderr);
 			execl("/usr/bin/gcc", "/usr/bin/gcc", "main.c", NULL);
 		} else if (pid > 0) {
 			// parent process
@@ -322,6 +348,8 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	}
+
+	remove(".lock");
 
 	return AC;
 }

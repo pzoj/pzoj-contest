@@ -99,8 +99,8 @@ function judge(code_file, lang, dir, ws) {
 				ws.send(buffer);
 				console.log(buffer);
 				buffer = buffer.split(' '); // TODO: splitting by spaces splits the result into "RTE", "(Segmentation", "Fault)"
-				mem = Math.max(mem, parseInt(buffer[0]));
-				time += parseInt(buffer[1]);
+				mem = Math.max(mem, parseInt(buffer[1]));
+				time += parseInt(buffer[2]);
 			}
 			ws.send(`FIN ${getVerdict(code)} ${mem} ${time}`);
 			ws.close();

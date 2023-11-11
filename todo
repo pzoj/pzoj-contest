@@ -1,5 +1,9 @@
 - BETTER ISOLATION + SECURITY
+- generators
+- "judging in progress" bar on submission page
+- display IE messages on submission page
+- better error handling for web backend
+- display total time and memory used on submission page
 
 KNOWN ISSUES
-- race condition when 2 users submit at the same time
-- RMT refuses to work (blank output) for some reason, output.txt is empty
+- none
