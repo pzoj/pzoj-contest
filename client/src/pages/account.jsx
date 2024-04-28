@@ -36,8 +36,7 @@ export default () => {
 				links={[
 					{ text: "Home", url: "/" },
 					{ text: "Problems", url: "/problems" },
-					{ text: "Learn", url: "/learn" },
-					{ text: "Recommended", url: "/recommended" },
+					{ text: "About", url: "/about" }
 				]}
 			/>
 

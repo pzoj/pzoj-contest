@@ -5,6 +5,7 @@ const languages = {
     cpp: "cpp",
     c: "c",
     py: "python",
+    java: "java",
 };
 
 const CodeEditor = (props, ref) => {
@@ -31,6 +32,7 @@ const CodeEditor = (props, ref) => {
                     <option value="cpp">C++20</option>
                     <option value="c">GNU C11</option>
                     <option value="py">Python3</option>
+                    <option value="java">Java</option>
                 </select>
             </div>
 

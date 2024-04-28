@@ -69,8 +69,7 @@ export default () => {
                 links={[
                     { text: "Home", url: "/" },
                     { text: "Problems", url: "/problems" },
-                    { text: "Learn", url: "/learn" },
-                    { text: "Recommended", url: "/recommended" },
+                    { text: "About", url: "/about" }
                 ]}
             />
 
@@ -155,6 +154,14 @@ export default () => {
                         bgColor="dark-1"
                         onClick={(e) => {
                             e.preventDefault();
+                            if (val.length > 65536) { // 64KB
+                                alert("Code too long");
+                                return;
+                            }
+                            if (lang == "java" && !val.match(/^\s*public\s*class\s*Main\s*{/)) {
+                                alert("Main class not found or it is not public. Make sure your class is named Main (with a capital M)");
+                                return;
+                            }
                             setResults([]);
                             results.length = 0;
                             setProblemEditorial(false);

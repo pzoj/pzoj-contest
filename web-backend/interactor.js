@@ -83,17 +83,20 @@ function judge(code_file, lang, dir, ws) {
 			// chdir into dir
 			let c = cwd();
 			chdir(dir);
-			if (lang != 'py') {
-				try {
-					fs.rmSync(code_file);
-				} catch {}
-			}
+			try {
+				fs.rmSync(code_file);
+			} catch {}
 			try {
 				fs.rmSync("output.txt");
 			} catch {}
 			try {
 				fs.rmSync("a.out");
 			} catch {}
+			if (lang == "java") {
+				try {
+					fs.rmSync("Main.class");
+				} catch {}
+			}
 			chdir(c);
 			if (buffer) {
 				ws.send(buffer);

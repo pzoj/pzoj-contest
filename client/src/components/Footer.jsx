@@ -14,7 +14,7 @@ const Footer = () => {
 
             <span className="mr-2">
                 <SecondaryButton
-                    link="https://github.com/sireButItsUnique/pzoj"
+                    link="https://github.com/pzoj/pzoj"
                     target="_blank"
                     text={
                         <span>
@@ -38,7 +38,7 @@ const Footer = () => {
                 />
             </span>
 
-            <p className="text-grey-1 mt-[1.5rem] pb-6">&copy; {currYear} Team PZOJ</p>
+            <p className="text-grey-1 mt-[1.5rem] pb-6">&copy; {currYear} Team int0x80</p>
         </footer>
     );
 };

@@ -176,7 +176,7 @@ app.get('/api/user/:username', (req, res) => {
 
 /* ------------------ PROBLEMS ------------------ */
 
-const allowedLanguages = ['cpp', 'c', 'py'];
+const allowedLanguages = ['cpp', 'c', 'py', 'java'];
 
 app.get('/api/problem/:pid', (req, res) => {
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
@@ -363,64 +363,6 @@ wss.on('connection', (ws) => {
 				});
 			});
 		});
-	});
-});
-
-/* ------------------ COURSES ------------------ */
-
-app.get('/api/courses', (req, res) => {
-	let courses = [];
-	fs.readdir(path.join(cwd(), '..', 'courses'), (err, files) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
-			return;
-		}
-		files.forEach((file) => {
-			if (file == "README.md")
-				return;
-			let tmp = [file, ...fs.readFileSync(path.join(cwd(), '..', 'courses', file, 'meta.txt')).toString().split('\n')];
-			courses.push({
-				cid: tmp[0],
-				title: tmp[1],
-				description: tmp[2],
-			});
-		});
-		res.send(JSON.stringify(courses));
-	});
-});
-
-app.get('/api/courses/:cid/img.png', (req, res) => {
-	fs.readdir(path.join(cwd(), '..', 'courses', req.params.cid), (err, files) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
-			return;
-		}
-		if (files.includes('img.png')) {
-			res.setHeader('Content-Type', 'image/png');
-			res.sendFile(path.join(cwd(), '..', 'courses', req.params.cid, 'img.png'));
-		} else {
-			res.status(404);
-			res.end();
-		}
-	});
-});
-
-app.get('/api/courses/:cid', (req, res) => {
-	let cid = req.params.cid;
-	let course = {};
-	fs.readFile(path.join(cwd(), '..', 'courses', cid, 'content.md'), (err, data) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
-			return;
-		}
-		course.content = data.toString();
-		res.send(converter.makeHtml(course.content));
 	});
 });
 

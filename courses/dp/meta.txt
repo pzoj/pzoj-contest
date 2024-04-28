@@ -1,2 +1,0 @@
-Dynamic Programming
-Dynamic Programming, also known as DP, is a method for solving a complex problem by breaking it down into a collection of simpler subproblems.

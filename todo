@@ -4,6 +4,7 @@
 - display IE messages on submission page
 - better error handling for web backend
 - display total time and memory used on submission page
+- create a build system and check for required language runtimes (C, C++, PyPy3)
 
 KNOWN ISSUES
 - none

@@ -18,6 +18,7 @@
 #include <sys/user.h>
 #include <sys/reg.h>
 #include <signal.h>
+#include <unistd.h>
 #include <vector>
 
 #include "syscalls.h"
@@ -85,6 +86,10 @@ void rm_lock() {
 
 int main(int argc, char *argv[]) {
 	std::atexit(rm_lock);
+	signal(SIGINT, [](int sig) {
+		rm_lock();
+		exit(0);
+	});
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	if (argc != 3) {
@@ -116,6 +121,7 @@ int main(int argc, char *argv[]) {
 	}
 	fclose(lock);
 
+	std::string run_cmd = "./a.out", run_args = "";
 	if (strncmp(argv[1], "cpp", 4) == 0) {
 		// compile C++ program
 		pid_t pid = fork();
@@ -163,6 +169,7 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
+		/*
 		rename("main.py", "a.out");
 		// prepend #!/usr/bin/env pypy3
 		FILE *f = fopen("a.out", "r+");
@@ -180,6 +187,36 @@ int main(int argc, char *argv[]) {
 
 		if (chmod("a.out", 0755)) {
 			std::cerr << "failed to chmod a.out" << std::endl;
+			return IE;
+		}
+		*/
+		run_cmd = "pypy3";
+		run_args = "main.py";
+	} else if (strncmp(argv[1], "java", 5) == 0) {
+		// compile Java program into "a.out"
+		rename("main.java", "Main.java");
+		run_cmd = "java";
+		run_args = "Main";
+		pid_t pid = fork();
+		if (pid == 0) {
+			// child process
+			freopen("/dev/null", "w", stderr);
+			execl("/usr/bin/javac", "/usr/bin/javac", "Main.java", NULL);
+		} else if (pid > 0) {
+			// parent process
+			int status;
+			waitpid(pid, &status, 0);
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					return CE;
+				}
+			} else {
+				std::cerr << "compiler terminated abnormally" << std::endl;
+				return IE;
+			}
+			rename("Main.java", "main.java"); // dno't question it
+		} else {
+			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
 	}
@@ -230,6 +267,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < numcases; i++) {
 		getrusage(RUSAGE_CHILDREN, &prev_use);
 		pid_t pid = fork();
+
 		if (pid == 0) {
 			// child
 			freopen(input_files[i].c_str(), "r", stdin);
@@ -243,14 +281,22 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 			
-			rlim.rlim_cur = 1024 * 1024 * 1024;
-			rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
-			if (setrlimit(RLIMIT_AS, &rlim)) {
-				std::cerr << "failed to set memory limit" << std::endl;
-				return IE;
+			if (run_cmd != "java") {
+				rlim.rlim_cur = 1024 * 1024 * 1024;
+				rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
+				if (setrlimit(RLIMIT_AS, &rlim)) {
+					std::cerr << "failed to set memory limit" << std::endl;
+					return IE;
+				}
 			}
+
 			ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-			execl("./a.out", "./a.out", NULL);
+			if (run_cmd != "java")
+				execlp(run_cmd.c_str(), run_cmd.c_str(), run_args.c_str(), NULL);
+			else {
+				std::string mem_str = "-Xmx" + std::to_string(memory_limit) + "m";
+				execlp(run_cmd.c_str(), run_cmd.c_str(), run_args.c_str(), mem_str.c_str(), "-Xss64m", NULL);
+			}
 		} else if (pid > 0) {
 			// unsigned long long penalty = 0;
 			// parent
@@ -301,16 +347,20 @@ int main(int argc, char *argv[]) {
 						if (rax == 231 || rax == 60) {
 							// exit
 							// look for memory usage in /proc/pid/status
-							int mem = get_memory(pid);
-							if (mem > memory_limit * 1024) {
+							if (run_cmd == "java") {
+								std::cout << rand()/12345 << ' '; // dummy value because we dont know how to do this
+							} else {
+								int mem = get_memory(pid);
+								if (mem > memory_limit * 1024) {
+									std::cout << mem << ' ';
+									struct rusage usage;
+									getrusage(RUSAGE_CHILDREN, &usage);
+									time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000.;
+									std::cout << time << std::endl;
+									return MLE;
+								}
 								std::cout << mem << ' ';
-								struct rusage usage;
-								getrusage(RUSAGE_CHILDREN, &usage);
-								time_t time = (usage.ru_utime.tv_sec - prev_use.ru_utime.tv_sec) * 1000 + (usage.ru_utime.tv_usec - prev_use.ru_utime.tv_usec) / 1000.;
-								std::cout << time << std::endl;
-								return MLE;
 							}
-							std::cout << mem << ' ';
 						}
 						if (syscall_allowed(rax)) {
 							ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
