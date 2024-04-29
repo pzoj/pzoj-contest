@@ -5,7 +5,7 @@ bool syscall_allowed(int syscall) {
 	return true;
 	// switch (syscall) {
 	// case 0: // read
-	// case 1: // write
+	// case 1: // wrie
 	// case 2: // open
 	// case 3: // close
 	// case 4: // stat

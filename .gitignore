@@ -1,6 +1,8 @@
 .vscode/
 
-/problems
+/problems/
+contests/*
+!README.md
 db.db
 
 */node_modules/
@@ -13,3 +15,4 @@ client/build/
 */.pnpm-debug.log*
 judge
 key.key
+sedimentation

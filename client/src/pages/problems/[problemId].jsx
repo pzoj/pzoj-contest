@@ -1,8 +1,3 @@
-import hljs from 'highlight.js/lib/core';
-import cpp from 'highlight.js/lib/languages/cpp';
-import python from 'highlight.js/lib/languages/python';
-hljs.registerLanguage('cpp', cpp);
-hljs.registerLanguage('python', python);
 import { useRouter } from "next/router";
 import Navbar from "@/components/Navbar";
 import PrimaryButton from "@/components/button/PrimaryButton";
@@ -27,7 +22,6 @@ export default () => {
             console.log(newlang);
             console.log(localStorage.getItem(router.query.problemId + newlang));
             setVal(localStorage.getItem(router.query.problemId + newlang));
-			setTimeout(() => hljs.highlightAll(), 500);
         }
     }, [router]);
 
@@ -158,7 +152,7 @@ export default () => {
                                 alert("Code too long");
                                 return;
                             }
-                            if (lang == "java" && !val.match(/^\s*public\s*class\s*Main\s*{/)) {
+                            if (lang == "java" && !val.match(/(?:^|;.*)public\s*class\s*Main\s*{/)) {
                                 alert("Main class not found or it is not public. Make sure your class is named Main (with a capital M)");
                                 return;
                             }

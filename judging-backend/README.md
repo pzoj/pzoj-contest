@@ -15,5 +15,6 @@
 	- formatted name of problem
 	- problem stars
 	- problem tag
+	- privacy (0 for public, 1 for private)
 
 - web backend MUST remove code_file, output.txt, and a.out after judging

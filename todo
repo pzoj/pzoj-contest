@@ -5,6 +5,10 @@
 - better error handling for web backend
 - display total time and memory used on submission page
 - create a build system and check for required language runtimes (C, C++, PyPy3)
+- batched grading (probably would be handled by web backend, not the judge)
+- contest leaderboards and stuff
+- display compile error
+- asm
 
 KNOWN ISSUES
-- none
+- loading a nonexistent problem should display a 404 page, not a submission page with no statement

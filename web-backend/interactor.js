@@ -74,7 +74,7 @@ function judge(code_file, lang, dir, ws) {
 				} else if (code == 136) {
 					buffer = "RTE_(disallowed_system_call) " + buffer;
 				} else {
-					buffer = "RTE " + buffer;
+					buffer = "RTE_" + buffer.replace('\n', '').replace(' ', '_');
 				}
 			} else {
 				buffer = getVerdict(code) + " " + buffer;
@@ -94,7 +94,11 @@ function judge(code_file, lang, dir, ws) {
 			} catch {}
 			if (lang == "java") {
 				try {
-					fs.rmSync("Main.class");
+					fs.rmSync("*.class"); // this may not work
+				} catch {}
+			} else if (lang == "asm") {
+				try {
+					fs.rmSync("main.o");
 				} catch {}
 			}
 			chdir(c);
@@ -110,62 +114,6 @@ function judge(code_file, lang, dir, ws) {
 			resolve([time, mem, getVerdict(code)]);
 		});
 	});
-	// child.stdout.on('data', (chunk) => {
-	// 	if (buffer) {
-	// 		ws.send(buffer);
-	// 		mem = Math.max(mem, parseInt(buffer.split(' ')[0]));
-	// 		time += parseInt(buffer.split(' ')[1]);
-	// 		console.log(buffer);
-	// 	}
-	// 	buffer = chunk.split('\n')[chunk.split('\n').length - 2];
-	// });
-	// child.stderr.on('data', (chunk) => {
-	// 	// todo: send to client
-	// 	console.error(chunk);
-	// });
-	// return new Promise((resolve) => {
-	// 	child.on('exit', (code) => {
-	// 		if (code >= 8) {
-	// 			// check for bitflags
-	// 			console.log(buffer);
-	// 			if (code == 24) {
-	// 				buffer = "RTE (Segmentation Fault) " + buffer.substring(4);
-	// 			} else if (code == 40) {
-	// 				buffer = "RTE (Floating Point Error) " + buffer.substring(4);
-	// 			} else if (code == 72) {
-	// 				buffer = "RTE (Aborted) " + buffer.substring(4);
-	// 			} else if (code == 136) {
-	// 				buffer = "RTE (disallowed system call) " + buffer.substring(4);
-	// 			} else {
-	// 				buffer = "RTE " + buffer.substring(4);
-	// 			}
-	// 		}
-	// 		// remove code file and output
-	// 		// chdir into dir
-	// 		let c = cwd();
-	// 		chdir(dir);
-	// 		if (lang != 'py') {
-	// 			try {
-	// 				fs.rmSync(code_file);
-	// 			} catch {}
-	// 		}
-	// 		try {
-	// 			fs.rmSync("output.txt");
-	// 		} catch {}
-	// 		try {
-	// 			fs.rmSync("a.out");
-	// 		} catch {}
-	// 		chdir(c);
-	// 		ws.send(buffer);
-	// 		buffer = buffer.split(' ');
-	// 		mem = Math.max(mem, parseInt(buffer[1]));
-	// 		time += parseInt(buffer[2]);
-	// 		ws.send(`FIN ${buffer[0]} ${mem} ${time}`);
-	// 		ws.close();
-	// 		console.log(time, mem, buffer[0]);
-	// 		resolve([time, mem, buffer[0]]);
-	// 	});
-	// });
 }
 
 exports.judge = judge;

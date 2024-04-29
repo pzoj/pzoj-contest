@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/g++", "/usr/bin/g++", "main.cpp", "-std=c++20", NULL);
+			execl("/usr/bin/g++", "/usr/bin/g++", "main.cpp", "-O3", "-std=c++20", NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/gcc", "/usr/bin/gcc", "main.c", NULL);
+			execl("/usr/bin/gcc", "/usr/bin/gcc", "main.c", "-O3", NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -219,8 +219,53 @@ int main(int argc, char *argv[]) {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
-	}
-	else {
+	} else if (strncmp(argv[1], "asm", 4) == 0) {
+		// assemble program
+		pid_t pid = fork();
+		if (pid == 0) {
+			// child process
+			freopen("/dev/null", "w", stderr);
+			execl("/home/kevlu8/Desktop/GitHub/pzoj/judging-backend/sedimentation", "/home/kevlu8/Desktop/GitHub/pzoj/judging-backend/sedimentation", "main.asm", NULL);
+		} else if (pid > 0) {
+			// parent process
+			int status;
+			waitpid(pid, &status, 0);
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					return CE;
+				}
+			} else {
+				std::cerr << "assembler terminated abnormally" << std::endl;
+				return IE;
+			}
+
+			// link program
+			pid_t pid = fork();
+			if (pid == 0) {
+				// child process
+				freopen("/dev/null", "w", stderr);
+				execl("/usr/bin/ld", "/usr/bin/ld", "main.o", NULL);
+			} else if (pid > 0) {
+				// parent process
+				int status;
+				waitpid(pid, &status, 0);
+				if (WIFEXITED(status)) {
+					if (WEXITSTATUS(status) != 0) {
+						return CE;
+					}
+				} else {
+					std::cerr << "linker terminated abnormally" << std::endl;
+					return IE;
+				}
+			} else {
+				std::cerr << "fork failed" << std::endl;
+				return IE;
+			}
+		} else {
+			std::cerr << "fork failed" << std::endl;
+			return IE;
+		}
+	} else {
 		std::cerr << "website passed unknown language to judge" << std::endl;
 		return IE;
 	}
@@ -236,6 +281,10 @@ int main(int argc, char *argv[]) {
 	if (!(init >> time_limit >> memory_limit >> checker)) {
 		std::cerr << "corrupted judge file" << std::endl;
 		return IE;
+	}
+
+	if (strncmp(argv[1], "py", 3) == 0) {
+		time_limit *= 2;
 	}
 
 	if (checker == "identical") {
@@ -272,6 +321,11 @@ int main(int argc, char *argv[]) {
 			// child
 			freopen(input_files[i].c_str(), "r", stdin);
 			freopen("output.txt", "w", stdout);
+
+			chmod("output.txt", 0662); // all permissions
+			chmod("a.out", 0775); 
+
+			setuid(65534); // nobody (i.e. unprivileged user)
 			
 			struct rlimit rlim;
 			rlim.rlim_cur = (time_limit + 999) / 1000;
