@@ -9,6 +9,7 @@
 - contest leaderboards and stuff
 - display compile error
 - asm
+- remove the submit button when there is currently a submission in progress
 
 KNOWN ISSUES
 - loading a nonexistent problem should display a 404 page, not a submission page with no statement
