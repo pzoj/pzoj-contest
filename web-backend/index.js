@@ -99,7 +99,22 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/register', (req, res) => {
-	let username = req.body.username;
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+	
+	username = req.body.username;
 	let password = req.body.password;
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
 		if (err) {
@@ -174,22 +189,178 @@ app.get('/api/user/:username', (req, res) => {
 	});
 });
 
-/* ------------------ PROBLEMS ------------------ */
-
 const allowedLanguages = ['cpp', 'c', 'py', 'java', 'asm'];
 
-app.get('/api/problem/:pid', (req, res) => {
-	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
-	// first check if problem is private (meta.txt, line 4)
-	var data;
-	try {
-		data = fs.readFileSync(path.join(problem_path, 'meta.txt'));
-	} catch (err) {
-		console.error(err);
-		res.status(404);
-		res.send('Problem not found');
+/* ------------------ CONTESTS ------------------ */
+
+// let leaderboard = [
+// 	{
+// 		'username': 'kevlu8',
+// 		'points': 500,
+// 		'penaltytime': 1000,
+// 		'problems': {
+// 			'1': {score: 100, penalty: 200},
+// 			'2': {score: 100, penalty: 200},
+// 			'3': {score: 100, penalty: 200},
+// 			'4': {score: 100, penalty: 200},
+// 			'5': {score: 100, penalty: 200}
+// 		}
+// 	},
+// 	{
+// 		'username': 'test',
+// 		'points': 300,
+// 		'penaltytime': 10,
+// 		'problems': {
+// 			'1': {score: 100, penalty: 3},
+// 			'2': {score: 0, penalty: 0},
+// 			'3': {score: 100, penalty: 5},
+// 			'4': {score: 100, penalty: 2},
+// 			'5': {score: 0, penalty: 0}
+// 		}
+// 	}
+// ];
+
+let leaderboard = [];
+
+app.get('/api/contest', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
 		return;
 	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
+	let contest_path = path.join(cwd(), '..', 'contests');
+	fs.readFile(path.join(contest_path, 'contest.md'), (err, data) => {
+		if (err) {
+			console.error(err);
+			res.status(404);
+			res.send('Contest not found');
+			return;
+		}
+		data = fs.readFileSync(path.join(contest_path, 'contest.md'));
+		data = converter.makeHtml(data.toString());
+		res.send(data);
+	});
+});
+
+app.get('/api/contest/meta', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
+	let contest_path = path.join(cwd(), '..', 'contests');
+	fs.readFile(path.join(contest_path, 'meta.txt'), (err, data) => {
+		if (err) {
+			console.error(err);
+			res.status(404);
+			res.send('Contest not found');
+			return;
+		}
+		data = data.toString().split('\n');
+		res.send({
+			cid: req.params.cid,
+			title: data[0],
+			start: data[1],
+			end: data[2],
+		});
+	});
+});
+
+app.get('/api/contest/leaderboard', (req, res) => {
+	// return the leaderboard but sorted
+	leaderboard.sort((a, b) => {
+		if (a.points < b.points)
+			return 1;
+		else if (a.points > b.points)
+			return -1;
+		else if (a.penaltytime < b.penaltytime)
+			return -1;
+		else if (a.penaltytime > b.penaltytime)
+			return 1;
+		else
+			return 0;
+	});
+	res.send(leaderboard);
+});
+
+app.get('/api/problems', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
+	let problems = [];
+	fs.readdir(path.join('..', 'problems'), (err, files) => {
+		if (err) {
+			console.error(err);
+			res.status(500);
+			res.end();
+			return;
+		}
+		files.forEach((file) => {
+			if (file.startsWith('.')) return;
+			let tmp = [
+				file,
+				...fs.readFileSync(path.join('..', 'problems', file, 'meta.txt')).toString().split('\n')
+			];
+			problems.push({
+				pid: tmp[0],
+				title: tmp[1],
+				difficulty: tmp[2],
+				tag: tmp[3],
+			});
+		});
+		res.send(JSON.stringify(problems));
+	});
+});
+
+app.get('/api/problem/:pid', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
+	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'problem.md'), (err, data) => {
 		if (err) {
 			console.error(err);
@@ -204,6 +375,21 @@ app.get('/api/problem/:pid', (req, res) => {
 });
 
 app.get('/api/problem/:pid/meta', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'meta.txt'), (err, data) => {
 		if (err) {
@@ -257,46 +443,82 @@ app.get('/api/problem/:pid/status', (req, res) => {
 	});
 });
 
-app.get('/api/problem/:pid/editorial', (req, res) => {
-	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
-	fs.readFile(path.join(problem_path, 'editorial.md'), (err, data) => {
-		if (err) {
-			console.error(err);
-			res.status(404);
-			res.send('Editorial not found');
-			return;
-		}
-		data = fs.readFileSync(path.join(problem_path, 'editorial.md'));
-		res.send(converter.makeHtml(data.toString()));
-	});
-});
-
-app.get('/api/problems', (req, res) => {
+app.get('/api/reset', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+	leaderboard = [];
 	let problems = [];
-	fs.readdir(path.join(cwd(), '..', 'problems'), (err, files) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
+	let conteststarttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
+	fs.readdirSync(path.join(cwd(), '..', 'problems')).forEach((file) => {
+		if (file.startsWith('.'))
 			return;
-		}
-		files.forEach((file) => {
-			if (file.startsWith('.')) return;
-			let tmp = [
-				file,
-				...fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')
-			];
-			if (req.query.q && !tmp[0].includes(req.query.q) && !tmp[1].includes(req.query.q))
+		problems.push(file);
+	});
+	db.serialize(() => {
+		db.run('BEGIN IMMEDIATE TRANSACTION');
+		db.all('SELECT * FROM users', [], (err, rows) => {
+			if (err) {
+				console.error(err);
+				db.run('ROLLBACK');
+				res.status(500);
+				res.end();
 				return;
-			problems.push({
-				pid: tmp[0],
-				title: tmp[1],
-				difficulty: tmp[2],
-				tag: tmp[3],
+			}
+			rows.forEach((row) => {
+				leaderboard.push({
+					'username': row.username,
+					'points': 0,
+					'penaltytime': 0,
+					'problems': {}
+				});
+				problems.forEach((problem) => {
+					leaderboard[leaderboard.length - 1].problems[problem] = {score: 0, penalty: 0};
+				});
 			});
 		});
-		res.send(JSON.stringify(problems));
+		db.run('COMMIT');
 	});
+	db.serialize(() => {
+		db.run('BEGIN IMMEDIATE TRANSACTION');
+		db.all('SELECT * FROM submissions ORDER BY timestamp ASC', [], (err, rows) => {
+			if (err) {
+				console.error(err);
+				db.run('ROLLBACK');
+				res.status(500);
+				res.end();
+				return;
+			}
+			rows.forEach((row) => {
+				let userindex = leaderboard.findIndex((e) => e.username == row.username);
+				if (leaderboard[userindex].problems[row.problemid].score == 100) {
+					return; // skip if already AC
+				}
+				if (row.result == 'AC') {
+					leaderboard[userindex].points += 100;
+					leaderboard[userindex].penaltytime += row.timestamp - conteststarttime;
+					leaderboard[userindex].problems[row.problemid].score = 100;
+					leaderboard[userindex].problems[row.problemid].penalty += row.timestamp - conteststarttime;
+				} else if (row.result != 'CE') {
+					leaderboard[userindex].problems[row.problemid].score = 0;
+					leaderboard[userindex].problems[row.problemid].penalty += 30;
+				}
+			});
+		});
+		db.run('COMMIT');
+	});
+	res.send('ok');
 });
 
 /* ------------------ SUBMISSIONS ------------------ */
@@ -346,6 +568,37 @@ wss.on('connection', (ws) => {
 					db.run('COMMIT');
 				});
 			});
+			if (leaderboard.filter((e) => e.username == user).length == 0) {
+				leaderboard.push({
+					'username': user,
+					'points': 0,
+					'penaltytime': 0,
+					'problems': {}
+				});
+				fs.readdirSync(path.join(cwd(), '..', 'problems')).forEach((file) => {
+					if (file.startsWith('.'))
+						return;
+					leaderboard[leaderboard.length - 1].problems[file] = {score: 0, penalty: 0};
+				});
+			}
+			if (res[res.length - 1].startsWith('AC')) {
+				// update leaderboard
+				let userindex = leaderboard.findIndex((e) => e.username == user);
+				if (leaderboard[userindex].problems[data.pid].score == 100)
+					return;
+				let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
+				leaderboard[userindex].points += 100;
+				console.log(starttime);
+				leaderboard[userindex].penaltytime += Math.floor(subtime / 60) - Math.floor(starttime / 60);
+				leaderboard[userindex].problems[data.pid].score = 100;
+				leaderboard[userindex].problems[data.pid].penalty += Math.floor(subtime / 60) - Math.floor(starttime / 60);
+			} else if (!res[res.length - 1].startsWith('CE')) {
+				let userindex = leaderboard.findIndex((e) => e.username == user);
+				if (leaderboard[userindex].problems[data.pid].score == 100)
+					return;
+				leaderboard[userindex].problems[data.pid].score = 0;
+				leaderboard[userindex].problems[data.pid].penalty += 30; // 30 min penalty per wrong submission
+			}
 		});
 	});
 });

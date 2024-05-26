@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar";
 import PrimaryButton from "@/components/button/PrimaryButton";
 import CodeEditor from "@/components/CodeEditor";
 import ProblemStatement from "@/components/ProblemStatement";
-import ProblemEditorial from "@/components/ProblemEditorial";
 import ProblemSubmissions from "@/components/ProblemSubmissions";
 import Head from "next/head";
 import { useState, useEffect, useRef } from "react";
@@ -27,7 +26,6 @@ export default () => {
 
     
     const [problemSubmit, setProblemSubmit] = useState(false);
-    const [problemEditorial, setProblemEditorial] = useState(false);
     const [problemStatement, setProblemStatement] = useState(true);
 
     const [expanded, setExpanded] = useState(false);
@@ -61,9 +59,8 @@ export default () => {
             <Navbar
                 className=""
                 links={[
-                    { text: "Home", url: "/" },
-                    { text: "Problems", url: "/problems" },
-                    { text: "About", url: "/about" }
+                    { text: "Contest", url: "/contest" },
+                    { text: "Problems", url: "/problems" }
                 ]}
             />
 
@@ -75,7 +72,6 @@ export default () => {
 
                             if (!problemStatement) {
                                 setProblemStatement(true);
-                                setProblemEditorial(false);
                                 setProblemSubmit(false);
                             }
                         }} 
@@ -84,27 +80,12 @@ export default () => {
                             Statement
                         </button>
                         <button 
-                            className={`py-[0.65rem] rounded-t cursor-pointer px-4 ${problemEditorial ? "text-white-0 border-border bg-dark-3" : "transition duration-200 hover:text-white-0"}`}
-                            onClick={(e) => {
-                                e.preventDefault();
-
-                                if (!problemEditorial) {
-                                    setProblemStatement(false);
-                                    setProblemEditorial(true);
-                                    setProblemSubmit(false);
-                                }
-                            }}
-                        >
-                            Editorial
-                        </button>
-                        <button 
                             className={`py-[0.65rem] rounded-t cursor-pointer px-4 ${problemSubmit ? "text-white-0 border-border bg-dark-3" : "transition duration-200 hover:text-white-0"}`}
                             onClick={(e) => {
                                 e.preventDefault(); 
 
                                 if (!problemSubmit) {
                                     setProblemStatement(false);
-                                    setProblemEditorial(false);
                                     setProblemSubmit(true);
                                 }
                             }}
@@ -116,12 +97,6 @@ export default () => {
                     {problemStatement &&
                         <div>
                             <ProblemStatement pid={problemId} />
-                        </div>
-                    }
-
-                    {problemEditorial &&
-                        <div>
-                            <ProblemEditorial />
                         </div>
                     }
 
@@ -158,7 +133,6 @@ export default () => {
                             }
                             setResults([]);
                             results.length = 0;
-                            setProblemEditorial(false);
                             setProblemStatement(false);
                             setProblemSubmit(true);
                             setVerdict(null);

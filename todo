@@ -1,15 +1,4 @@
-- BETTER ISOLATION + SECURITY
-- generators
-- "judging in progress" bar on submission page
-- display IE messages on submission page
-- better error handling for web backend
-- display total time and memory used on submission page
-- create a build system and check for required language runtimes (C, C++, PyPy3)
-- batched grading (probably would be handled by web backend, not the judge)
-- contest leaderboards and stuff
-- display compile error
-- asm
-- remove the submit button when there is currently a submission in progress
-
-KNOWN ISSUES
-- loading a nonexistent problem should display a 404 page, not a submission page with no statement
+TODO:
+- Timer/countdown on the main contest page
+- Logging out doesn't actually log you out
+- Add admin panel

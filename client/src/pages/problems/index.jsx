@@ -47,9 +47,8 @@ export default () => {
 
 			<Navbar
 				links={[
-					{ text: "Home", url: "/" },
-					{ text: "Problems", url: "/problems" },
-					{ text: "About", url: "/about" }
+					{ text: "Contest", url: "/contest" },
+					{ text: "Problems", url: "/problems" }
 				]}
 			/>
 
