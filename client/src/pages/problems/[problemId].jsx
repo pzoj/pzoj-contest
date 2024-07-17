@@ -127,7 +127,7 @@ export default () => {
                                 alert("Code too long");
                                 return;
                             }
-                            if (lang == "java" && !val.match(/(?:^|;.*)public\s*class\s*Main\s*{/)) {
+                            if (lang == "java" && !val.match(/(?:\s|\S)*public\s*class\s*Main\s*{/)) {
                                 alert("Main class not found or it is not public. Make sure your class is named Main (with a capital M)");
                                 return;
                             }

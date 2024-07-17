@@ -596,20 +596,20 @@ wss.on('connection', (ws) => {
 		}
 		let filecontent = data.code;
 		let lang = data.lang;
-		// check if there exists .lock file
-		let attempts = 0;
-		while (fs.existsSync(path.join(cwd(), '..', 'problems', data.pid, '.lock'))) {
-			// wait
-			attempts++;
-			// sleep for 1 second
-			await new Promise(r => setTimeout(r, 1000));
-			if (attempts > 60) {
-				ws.send('errorJudgetimedout');
-				ws.close();
-				return;
-			}
+		// jid should be random string of length 10
+		let jid = '';
+		for (let i = 0; i < 10; i++) {
+			jid += String.fromCharCode(Math.floor(Math.random() * 26) + 97);
 		}
-		let code_path = path.join(cwd(), '..', 'problems', data.pid, 'main.' + lang);
+
+		if (lang == 'java') {
+			// due to our JID system, java will throw a temper tantrum
+			// we have to rename the class to Main{JID}
+			filecontent = filecontent.replace(/public\s*class\s*Main\s*{/g, `public class Main${jid} {`);
+			// extremely hacky
+		}
+
+		let code_path = path.join(cwd(), '..', 'problems', data.pid, 'main' + jid + '.' + lang);
 		let problem_path = path.join(cwd(), '..', 'problems', data.pid);
 		if (allowedLanguages.includes(lang)) {
 			filecontent.replace('\\n', '\n');
@@ -625,7 +625,8 @@ wss.on('connection', (ws) => {
 			ws.send('errorUnsupportedlanguage');
 			return;
 		}
-		judge(code_path, lang, problem_path, ws).then((res) => {
+
+		judge(code_path, lang, problem_path, ws, jid).then((res) => {
 			if (res[res.length - 1].startsWith('IE'))
 				return;
 			db.serialize(() => {

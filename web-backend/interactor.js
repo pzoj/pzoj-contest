@@ -38,8 +38,8 @@ function getVerdict(code) {
 	}
 }
 
-function judge(code_file, lang, dir, ws) {
-	let child = child_proc.execFile('../judging-backend/judge', [lang, dir]);
+function judge(code_file, lang, dir, ws, jid) {
+	let child = child_proc.execFile('../judging-backend/judge', [lang, dir, jid]);
 	let buffer = "";
 	let time = 0;
 	let mem = 0;
@@ -74,7 +74,7 @@ function judge(code_file, lang, dir, ws) {
 				} else if (code == 136) {
 					buffer = "RTE_(disallowed_system_call) " + buffer;
 				} else {
-					buffer = "RTE_" + buffer.replace('\n', '').replace(' ', '_');
+					// wtf
 				}
 			} else {
 				buffer = getVerdict(code) + " " + buffer;
@@ -87,25 +87,21 @@ function judge(code_file, lang, dir, ws) {
 				fs.rmSync(code_file);
 			} catch {}
 			try {
-				fs.rmSync("output.txt");
+				fs.rmSync("output" + jid + ".txt");
 			} catch {}
 			try {
-				fs.rmSync("a.out");
+				fs.rmSync(jid);
 			} catch {}
 			if (lang == "java") {
 				try {
-					fs.rmSync("*.class"); // this may not work
-				} catch {}
-			} else if (lang == "asm") {
-				try {
-					fs.rmSync("main.o");
+					fs.rmSync("Main" + jid + ".class");
 				} catch {}
 			}
 			chdir(c);
 			if (buffer) {
 				ws.send(buffer);
 				console.log(buffer);
-				buffer = buffer.split(' '); // TODO: splitting by spaces splits the result into "RTE", "(Segmentation", "Fault)"
+				buffer = buffer.split(' ');
 				mem = Math.max(mem, parseInt(buffer[1]));
 				time += parseInt(buffer[2]);
 			}

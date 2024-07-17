@@ -80,21 +80,12 @@ uint64_t get_time(struct rusage &prevuse) {
 	return time;
 }
 
-void rm_lock() {
-	remove(".lock");
-}
-
 int main(int argc, char *argv[]) {
-	std::atexit(rm_lock);
-	signal(SIGINT, [](int sig) {
-		rm_lock();
-		exit(0);
-	});
-
-	freopen("log.log", "w", stderr);
+	freopen("log.log", "a", stderr);
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
-	if (argc != 3) {
+	// argv[3] is the submission id, a unique id
+	if (argc != 4) {
 		std::cerr << "invalid number of arguments" << std::endl;
 		return IE;
 	}
@@ -103,34 +94,17 @@ int main(int argc, char *argv[]) {
 		std::cerr << "failed to chdir" << std::endl;
 		return IE;
 	}
-	
-	struct stat buffer;
-	int tries = 0;
-	while (stat(".lock", &buffer) == 0) {
-		sleep(1);
-		tries++;
-		if (tries > 600) { 
-			std::cerr << "judging timed out" << std::endl;
-			return IE;
-		}
-	}
 
-	// create lock file to indicate judging is in progress
-	FILE *lock = fopen(".lock", "w");
-	if (lock == NULL) {
-		std::cerr << "failed to create lock file" << std::endl;
-		return IE;
-	}
-	fclose(lock);
-
-	std::string run_cmd = "./a.out", run_args = "";
+	std::string judge_id = argv[3];
+	std::string run_cmd = judge_id, run_args = "";
 	if (strncmp(argv[1], "cpp", 4) == 0) {
+		run_cmd = "./" + judge_id;
 		// compile C++ program
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
-			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/g++", "/usr/bin/g++", "main.cpp", "-O3", "-std=c++20", NULL);
+			// freopen("/dev/null", "w", stderr);
+			execl("/usr/bin/g++", "/usr/bin/g++", ("main" + judge_id + ".cpp").c_str(), "-O3", "-std=c++20", "-o", judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -148,12 +122,13 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	} else if (strncmp(argv[1], "c", 2) == 0) {
+		run_cmd = "./" + judge_id;
 		// compile C program
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/gcc", "/usr/bin/gcc", "main.c", "-O3", NULL);
+			execl("/usr/bin/gcc", "/usr/bin/gcc", ("main" + judge_id + ".c").c_str(), "-O3", "-o", judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -172,17 +147,17 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
 		run_cmd = "pypy3";
-		run_args = "main.py";
+		run_args = "main" + judge_id + ".py";
 	} else if (strncmp(argv[1], "java", 5) == 0) {
 		// compile Java program into "a.out"
-		rename("main.java", "Main.java");
+		rename(("main" + judge_id + ".java").c_str(), ("Main" + judge_id + ".java").c_str());
 		run_cmd = "java";
-		run_args = "Main";
+		run_args = "Main" + judge_id;
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/javac", "/usr/bin/javac", "Main.java", NULL);
+			execl("/usr/bin/javac", "/usr/bin/javac", ("Main" + judge_id + ".java").c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -195,7 +170,7 @@ int main(int argc, char *argv[]) {
 				std::cerr << "compiler terminated abnormally" << std::endl;
 				return IE;
 			}
-			rename("Main.java", "main.java"); // dno't question it
+			rename(("Main" + judge_id + ".java").c_str(), ("main" + judge_id + ".java").c_str()); // dno't question it
 		} else {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
@@ -255,10 +230,10 @@ int main(int argc, char *argv[]) {
 		if (pid == 0) {
 			// child
 			freopen(input_files[i].c_str(), "r", stdin);
-			freopen("output.txt", "w", stdout);
+			freopen(("output" + judge_id + ".txt").c_str(), "w", stdout);
 
-			chmod("output.txt", 0662); // all permissions
-			chmod("a.out", 0775); 
+			chmod(("output" + judge_id + ".txt").c_str(), 0662); // all permissions
+			chmod(judge_id.c_str(), 0775); 
 
 			setuid(65534); // nobody (i.e. unprivileged user)
 			
@@ -304,7 +279,7 @@ int main(int argc, char *argv[]) {
 					}
 					std::cout << time << std::endl;
 					// check output
-					std::fstream f("output.txt", std::ios::in);
+					std::fstream f(("output" + judge_id + ".txt"), std::ios::in);
 					if (!f.is_open()) {
 						std::cerr << "failed to open output.txt" << std::endl;
 						return IE;
