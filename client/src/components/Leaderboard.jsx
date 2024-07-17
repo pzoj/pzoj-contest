@@ -26,12 +26,12 @@ const Leaderboard = ({ users }) => {
 							<td className='border border-stone-400 p-3'>{rank++}</td>
 							<td className='border border-stone-400 p-3'>{user.username}</td>
 							{Object.keys(user.problems).map((key, index) => (
-								<td className={`border border-stone-400 p-3 ${user.problems[key].score==100?"text-green-500":"text-red-500"}`} key={index}>
-									{user.problems[key].score} ({user.problems[key].penalty})
+								<td className={`border border-stone-400 p-3 ${user.problems[key].score==100?"text-green-500":"text-red-500"} text-center`} key={index}>
+									{user.problems[key].score?user.problems[key].score:""} {user.problems[key].score?`(${user.problems[key].penalty})`:""}
 								</td>
 							))}
-							<td className='border border-stone-400 p-3'>{user.points}</td>
-							<td className='border border-stone-400 p-3'>{user.penaltytime}</td>
+							<td className='border border-stone-400 p-3 text-center'>{user.points}</td>
+							<td className='border border-stone-400 p-3 text-center'>{user.penaltytime}</td>
 						</tr>
 					))}
 				</tbody>

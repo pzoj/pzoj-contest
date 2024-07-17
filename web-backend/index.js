@@ -148,7 +148,6 @@ app.post('/api/register', (req, res) => {
 						return;
 					}
 					let token = getToken(username);
-					res.cookie('token', token, { maxAge: 1000 * 60 * 60 * 24 * 7, httpOnly: true });
 					res.send(token);
 					db.run('COMMIT');
 				});
@@ -157,39 +156,34 @@ app.post('/api/register', (req, res) => {
 	});
 });
 
-app.get('/api/user/:username', (req, res) => {
-	let username = req.params.username;
-	let jsonret = {};
-	// user data
-	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
+app.get('/api/resetaccounts', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+	// clear all users except admin
+	db.run('DELETE FROM users WHERE username != "admin"', [], (err) => {
 		if (err) {
 			console.error(err);
 			res.status(500);
 			res.end();
 			return;
 		}
-		// if user does not exist, send back 404
-		if (row == undefined) {
-			res.status(404);
-			res.end();
-			return;
-		}
-		jsonret['username'] = row.username;
-		// user submissions
-		db.all('SELECT * FROM submissions WHERE username = ?', [username], (err, rows) => {
-			if (err) {
-				console.error(err);
-				res.status(500);
-				res.end();
-				return;
-			}
-			jsonret['submissions'] = rows;
-			res.send(jsonret);
-		});
+		res.send('ok');
 	});
 });
 
-const allowedLanguages = ['cpp', 'c', 'py', 'java', 'asm'];
+const allowedLanguages = ['cpp', 'c', 'py', 'java'];
 
 /* ------------------ CONTESTS ------------------ */
 
@@ -318,6 +312,13 @@ app.get('/api/problems', (req, res) => {
 		res.end();
 		return;
 	}
+	// compare current time and contest start time
+	let curtime = Math.floor(Date.now() / 1000);
+	let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
+	if (curtime < starttime) {
+		res.end();
+		return;
+	}
 
 	let problems = [];
 	fs.readdir(path.join('..', 'problems'), (err, files) => {
@@ -443,7 +444,7 @@ app.get('/api/problem/:pid/status', (req, res) => {
 	});
 });
 
-app.get('/api/reset', (req, res) => {
+app.get('/api/resetleaderboard', (req, res) => {
 	if (req.cookies == undefined) {
 		res.end();
 		return;
@@ -458,6 +459,13 @@ app.get('/api/reset', (req, res) => {
 		res.end();
 		return;
 	}
+
+	resetleaderboard();
+
+	res.send('ok');
+});
+
+function resetleaderboard() {
 	leaderboard = [];
 	let problems = [];
 	let conteststarttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
@@ -467,8 +475,8 @@ app.get('/api/reset', (req, res) => {
 		problems.push(file);
 	});
 	db.serialize(() => {
-		db.run('BEGIN IMMEDIATE TRANSACTION');
-		db.all('SELECT * FROM users', [], (err, rows) => {
+		db.run('BEGIN IMMEDIATE TRANSACTION'); // ignore admin
+		db.all('SELECT * FROM users WHERE username != "admin"', [], (err, rows) => {
 			if (err) {
 				console.error(err);
 				db.run('ROLLBACK');
@@ -492,7 +500,7 @@ app.get('/api/reset', (req, res) => {
 	});
 	db.serialize(() => {
 		db.run('BEGIN IMMEDIATE TRANSACTION');
-		db.all('SELECT * FROM submissions ORDER BY timestamp ASC', [], (err, rows) => {
+		db.all('SELECT * FROM submissions WHERE username != "admin" ORDER BY timestamp ASC', [], (err, rows) => {
 			if (err) {
 				console.error(err);
 				db.run('ROLLBACK');
@@ -506,19 +514,69 @@ app.get('/api/reset', (req, res) => {
 					return; // skip if already AC
 				}
 				if (row.result == 'AC') {
-					leaderboard[userindex].points += 100;
-					leaderboard[userindex].penaltytime += row.timestamp - conteststarttime;
 					leaderboard[userindex].problems[row.problemid].score = 100;
-					leaderboard[userindex].problems[row.problemid].penalty += row.timestamp - conteststarttime;
+					leaderboard[userindex].problems[row.problemid].penalty *= 10;
+					leaderboard[userindex].problems[row.problemid].penalty = Math.floor(row.timestamp / 60 - conteststarttime / 60);
+					leaderboard[userindex].points += 100;
+					leaderboard[userindex].penaltytime += leaderboard[userindex].problems[row.problemid].penalty;
 				} else if (row.result != 'CE') {
 					leaderboard[userindex].problems[row.problemid].score = 0;
-					leaderboard[userindex].problems[row.problemid].penalty += 30;
+					leaderboard[userindex].problems[row.problemid].penalty += 1;
 				}
 			});
 		});
 		db.run('COMMIT');
 	});
-	res.send('ok');
+}
+
+/* ------------------ ADMIN PANEL ------------------ */
+
+app.get('/api/admin', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+
+	// send admin.htlm
+	res.sendFile(path.join(cwd(), 'admin.html'));
+});
+
+app.get('/api/resetsubmissions', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+
+	// clear all submissions
+	db.run('DELETE FROM submissions', [], (err) => {
+		if (err) {
+			console.error(err);
+			res.status(500);
+			res.end();
+			return;
+		}
+		res.send('ok');
+	});
 });
 
 /* ------------------ SUBMISSIONS ------------------ */
@@ -526,18 +584,31 @@ app.get('/api/reset', (req, res) => {
 const wss = new ws.Server({ port: 3002 });
 
 wss.on('connection', (ws) => {
-	ws.on('message', (message) => {
+	ws.on('message', async (message) => {
 		let subtime = Math.floor(Date.now() / 1000);
 		let data = JSON.parse(message.toString());
 		let token = data.token;
 		let user = verifyToken(token);
 		if (user === null) {
-			ws.send('error: Invalid token');
+			ws.send('errorInvalidtoken');
 			ws.close();
 			return;
 		}
 		let filecontent = data.code;
 		let lang = data.lang;
+		// check if there exists .lock file
+		let attempts = 0;
+		while (fs.existsSync(path.join(cwd(), '..', 'problems', data.pid, '.lock'))) {
+			// wait
+			attempts++;
+			// sleep for 1 second
+			await new Promise(r => setTimeout(r, 1000));
+			if (attempts > 60) {
+				ws.send('errorJudgetimedout');
+				ws.close();
+				return;
+			}
+		}
 		let code_path = path.join(cwd(), '..', 'problems', data.pid, 'main.' + lang);
 		let problem_path = path.join(cwd(), '..', 'problems', data.pid);
 		if (allowedLanguages.includes(lang)) {
@@ -547,11 +618,11 @@ wss.on('connection', (ws) => {
 			try {
 				fs.writeFileSync(code_path, filecontent);
 			} catch (err) {
-				ws.send('error: Error writing to file');
+				ws.send('errorErrorwritingtofile');
 				return;
 			}
 		} else {
-			ws.send('error: Unsupported language');
+			ws.send('errorUnsupportedlanguage');
 			return;
 		}
 		judge(code_path, lang, problem_path, ws).then((res) => {
@@ -587,17 +658,19 @@ wss.on('connection', (ws) => {
 				if (leaderboard[userindex].problems[data.pid].score == 100)
 					return;
 				let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
-				leaderboard[userindex].points += 100;
-				console.log(starttime);
-				leaderboard[userindex].penaltytime += Math.floor(subtime / 60) - Math.floor(starttime / 60);
 				leaderboard[userindex].problems[data.pid].score = 100;
-				leaderboard[userindex].problems[data.pid].penalty += Math.floor(subtime / 60) - Math.floor(starttime / 60);
+				// existing penalty is # of wrong submissions
+				leaderboard[userindex].problems[data.pid].penalty *= 10;
+				leaderboard[userindex].problems[data.pid].penalty += Math.floor(subtime / 60 - starttime / 60);
+				leaderboard[userindex].points += 100;
+				leaderboard[userindex].penaltytime += leaderboard[userindex].problems[data.pid].penalty;
 			} else if (!res[res.length - 1].startsWith('CE')) {
 				let userindex = leaderboard.findIndex((e) => e.username == user);
 				if (leaderboard[userindex].problems[data.pid].score == 100)
 					return;
 				leaderboard[userindex].problems[data.pid].score = 0;
-				leaderboard[userindex].problems[data.pid].penalty += 30; // 30 min penalty per wrong submission
+				leaderboard[userindex].problems[data.pid].penalty += 1; // indicate a wrong submission
+				// only add penalty if AC later
 			}
 		});
 	});
@@ -607,4 +680,5 @@ wss.on('connection', (ws) => {
 
 app.listen(3001, () => {
 	console.log(`Server started on port 3001`);
+	resetleaderboard();
 });

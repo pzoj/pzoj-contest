@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>ADMIN PANEL</title>
+</head>
+<body>
+	<h1>ADMIN PANEL</h1>
+	<!-- reset leaderboard button which GETs /api/reset -->
+	<button id="reset-leaderboard">Reset Leaderboard</button>
+
+	<!-- register account w/ password, post /api/register -->
+	<form id="register-form">
+		<input type="text" name="username" placeholder="Username" required>
+		<input type="password" name="password" placeholder="Password" required>
+		<button type="submit">Register</button>
+	</form>
+	
+	<button id="reset-accounts">Reset Accounts</button>
+
+	<button id="reset-submissions">Reset Submissions</button>
+
+	<a id="message"></a>
+	
+	<script>
+		// add event listener to reset leaderboard button
+		document.getElementById('reset-leaderboard').addEventListener('click', async () => {
+			// fetch /api/reset
+			const response = await fetch('/api/resetleaderboard');
+			// if response is not ok, alert error message
+			if (!response.ok) {
+				alert('Error resetting leaderboard');
+			} else {
+				document.getElementById('message').textContent = 'Leaderboard reset';
+			}
+		});
+
+		// add event listener to register form
+		document.getElementById('register-form').addEventListener('submit', async (event) => {
+			// prevent default form submission
+			event.preventDefault();
+			// get form data
+			const formData = new FormData(event.target);
+			// create object from form data
+			const data = Object.fromEntries(formData);
+			// fetch /api/register with POST method and data
+			const response = await fetch('/api/register', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			});
+			// if response is not ok, alert error message
+			if (!response.ok) {
+				alert('Error registering account');
+			} else {
+				document.getElementById('message').textContent = 'Account registered';
+			}
+		});
+
+		document.getElementById('reset-accounts').addEventListener('click', async () => {
+			const response = await fetch('/api/resetaccounts');
+			// if response is not ok, alert error message
+			if (!response.ok) {
+				alert('Error resetting accounts');
+			} else {
+				document.getElementById('message').textContent = 'Accounts reset';
+			}
+		});
+
+		document.getElementById('reset-submissions').addEventListener('click', async () => {
+			const response = await fetch('/api/resetsubmissions');
+			// if response is not ok, alert error message
+			if (!response.ok) {
+				alert('Error resetting submissions');
+			} else {
+				document.getElementById('message').textContent = 'Submissions reset';
+			}
+		});
+	</script>
+</body>
+</html>

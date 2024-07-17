@@ -14,6 +14,7 @@ const ProblemSubmissions = (props) => {
             <h1 className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-sky-500 font-bold text-4xl">Submission</h1>
             <hr className="border-b border-border my-4" />
 
+
             <table className="w-full">
                 <thead>
                     <tr className="text-grey-1">
@@ -23,6 +24,11 @@ const ProblemSubmissions = (props) => {
                         <th className="pb-3">Verdict</th>
                     </tr>
                 </thead>
+
+				<h1 className={`text-center text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-sky-500 ${props.data.length == 0 ? "text-center" : "hidden"}`}>
+					Pending judgement...
+				</h1>
+
                 <tbody className="border-t border-border">
                     {
                         props.data.map((test, idx) => {

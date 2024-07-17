@@ -90,6 +90,8 @@ int main(int argc, char *argv[]) {
 		rm_lock();
 		exit(0);
 	});
+
+	freopen("log.log", "w", stderr);
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	if (argc != 3) {
@@ -169,27 +171,6 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
-		/*
-		rename("main.py", "a.out");
-		// prepend #!/usr/bin/env pypy3
-		FILE *f = fopen("a.out", "r+");
-		if (f == NULL) {
-			std::cerr << "failed to open file handle a.out" << std::endl;
-			return IE;
-		}
-
-		char *buf = (char *)malloc(65536);
-		fread(buf, 1, 65536, f);
-		fseek(f, 0, SEEK_SET);
-		fprintf(f, "#!/usr/bin/env pypy3\n");
-		fwrite(buf, 1, strlen(buf), f);
-		fclose(f);
-
-		if (chmod("a.out", 0755)) {
-			std::cerr << "failed to chmod a.out" << std::endl;
-			return IE;
-		}
-		*/
 		run_cmd = "pypy3";
 		run_args = "main.py";
 	} else if (strncmp(argv[1], "java", 5) == 0) {
@@ -215,52 +196,6 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 			rename("Main.java", "main.java"); // dno't question it
-		} else {
-			std::cerr << "fork failed" << std::endl;
-			return IE;
-		}
-	} else if (strncmp(argv[1], "asm", 4) == 0) {
-		// assemble program
-		pid_t pid = fork();
-		if (pid == 0) {
-			// child process
-			freopen("/dev/null", "w", stderr);
-			execl("/home/kevlu8/Desktop/GitHub/pzoj/judging-backend/sedimentation", "/home/kevlu8/Desktop/GitHub/pzoj/judging-backend/sedimentation", "main.asm", NULL);
-		} else if (pid > 0) {
-			// parent process
-			int status;
-			waitpid(pid, &status, 0);
-			if (WIFEXITED(status)) {
-				if (WEXITSTATUS(status) != 0) {
-					return CE;
-				}
-			} else {
-				std::cerr << "assembler terminated abnormally" << std::endl;
-				return IE;
-			}
-
-			// link program
-			pid_t pid = fork();
-			if (pid == 0) {
-				// child process
-				freopen("/dev/null", "w", stderr);
-				execl("/usr/bin/ld", "/usr/bin/ld", "main.o", NULL);
-			} else if (pid > 0) {
-				// parent process
-				int status;
-				waitpid(pid, &status, 0);
-				if (WIFEXITED(status)) {
-					if (WEXITSTATUS(status) != 0) {
-						return CE;
-					}
-				} else {
-					std::cerr << "linker terminated abnormally" << std::endl;
-					return IE;
-				}
-			} else {
-				std::cerr << "fork failed" << std::endl;
-				return IE;
-			}
 		} else {
 			std::cerr << "fork failed" << std::endl;
 			return IE;

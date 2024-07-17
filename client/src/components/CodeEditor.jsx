@@ -5,8 +5,7 @@ const languages = {
     cpp: "cpp",
     c: "c",
     py: "python",
-    java: "java",
-    asm: "asm",
+    java: "java"
 };
 
 const CodeEditor = (props) => {
@@ -19,20 +18,6 @@ const CodeEditor = (props) => {
         setLang(props.lang || "cpp");
         selectRef.current.value = props.lang || "cpp";
     }, [props.val]);
-
-    function handleEditorWillMount(monaco) {
-        monaco.languages.register({ id: "asm" });
-        monaco.languages.setMonarchTokensProvider("asm", {
-            keywords: ["section", "global", "extern", "dd", "db", "dw", "dq"],
-            tokenizer: {
-                root: [
-                    [/".*?"/, "string"],
-                    [/;/, "comment"],
-                ]
-            },
-        });
-        console.log("fjeaiofjeawoi");
-    }
 
     return (
         <div className="rounded-md w-full h-full shadow-4xl" id="code-editor">
@@ -48,7 +33,6 @@ const CodeEditor = (props) => {
                     <option value="c">GNU C11</option>
                     <option value="py">Python3</option>
                     <option value="java">Java</option>
-                    <option value="asm">NASM64</option>
                 </select>
             </div>
 
@@ -62,7 +46,6 @@ const CodeEditor = (props) => {
                 }}
                 line={1}
                 className="border border-border rounded"
-                beforeMount={handleEditorWillMount}
             />
         </div>
     );
