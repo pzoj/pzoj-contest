@@ -36,6 +36,7 @@ export default () => {
 
     const [results, setResults] = useState([]);
     const [verdict, setVerdict] = useState(null);
+	const [done, setDone] = useState(true);
 
     const handleOnChange = (newlang, newval) => {
         if (newlang != lang) {
@@ -123,6 +124,11 @@ export default () => {
                         bgColor="dark-1"
                         onClick={(e) => {
                             e.preventDefault();
+							// check if there is currently a submission
+							if (!done) {
+								alert("Please wait for the current submission to finish before submitting again.");
+								return;
+							}
                             if (val.length > 65536) { // 64KB
                                 alert("Code too long");
                                 return;
@@ -136,6 +142,7 @@ export default () => {
                             setProblemStatement(false);
                             setProblemSubmit(true);
                             setVerdict(null);
+							setDone(false);
                             let token = localStorage.getItem("token");
                             if (!token) {
                                 router.push("/account");
@@ -153,12 +160,14 @@ export default () => {
                             ws.onmessage = (msg) => {
                                 msg = msg.data;
                                 if (msg.startsWith("error:") || msg.startsWith("IE")) {
-                                    console.error(msg);
+									console.error(msg);
+									setDone(true);
                                     return;
                                 }
                                 msg = msg.split(" ");
                                 if (msg[0] == "FIN") {
                                     setVerdict(msg[1]);
+									setDone(true);
                                     return;
                                 }
                                 msg = {

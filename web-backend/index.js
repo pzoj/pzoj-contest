@@ -215,6 +215,8 @@ const allowedLanguages = ['cpp', 'c', 'py', 'java'];
 // ];
 
 let leaderboard = [];
+let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
+let endtime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[2]);
 
 app.get('/api/contest', (req, res) => {
 	if (req.cookies == undefined) {
@@ -271,6 +273,8 @@ app.get('/api/contest/meta', (req, res) => {
 			return;
 		}
 		data = data.toString().split('\n');
+		starttime = parseInt(data[1]);
+		endtime = parseInt(data[2]);
 		res.send({
 			cid: req.params.cid,
 			title: data[0],
@@ -314,7 +318,6 @@ app.get('/api/problems', (req, res) => {
 	}
 	// compare current time and contest start time
 	let curtime = Math.floor(Date.now() / 1000);
-	let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
 	if (curtime < starttime) {
 		res.end();
 		return;
@@ -591,6 +594,11 @@ wss.on('connection', (ws) => {
 		let user = verifyToken(token);
 		if (user === null) {
 			ws.send('errorInvalidtoken');
+			ws.close();
+			return;
+		}
+		if (subtime < starttime || subtime > endtime) {
+			ws.send('errorContestnotactive');
 			ws.close();
 			return;
 		}

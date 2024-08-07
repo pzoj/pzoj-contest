@@ -14,9 +14,9 @@ const Leaderboard = ({ users }) => {
 						<th className="border border-stone-400 p-3">Rank</th>
 						<th className='border border-stone-400 p-3'>Username</th>
 						{Object.keys(users[0].problems).map((key, index) => (
-							<th className='border border-stone-400 p-3' key={index}>Problem {index + 1}</th>
+							<th className='border border-stone-400 p-3' key={index}>{key}</th>
 						))}
-						<th className='border border-stone-400 p-3'>Final Score</th>
+						<th className='border border-stone-400 p-3'>Total Score</th>
 						<th className='border border-stone-400 p-3'>Penalty Time</th>
 					</tr>
 				</thead>

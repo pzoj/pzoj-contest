@@ -82,6 +82,8 @@ uint64_t get_time(struct rusage &prevuse) {
 
 int main(int argc, char *argv[]) {
 	freopen("log.log", "a", stderr);
+	std::cerr << "--- JUDGING AT " << time(0) << " ---" << std::endl;
+	std::cerr << "PROBLEM: " << argv[2] << std::endl;
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	// argv[3] is the submission id, a unique id
@@ -90,11 +92,13 @@ int main(int argc, char *argv[]) {
 		return IE;
 	}
 
-	if (chdir(argv[2])) {
+	// if (chdir(argv[2])) {
+	if (chdir("/tmp")) {
 		std::cerr << "failed to chdir" << std::endl;
 		return IE;
 	}
 
+	std::string dir = argv[2];
 	std::string judge_id = argv[3];
 	std::string run_cmd = judge_id, run_args = "";
 	if (strncmp(argv[1], "cpp", 4) == 0) {
@@ -104,7 +108,7 @@ int main(int argc, char *argv[]) {
 		if (pid == 0) {
 			// child process
 			// freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/g++", "/usr/bin/g++", ("main" + judge_id + ".cpp").c_str(), "-O3", "-std=c++20", "-o", judge_id.c_str(), NULL);
+			execl("/usr/bin/g++", "/usr/bin/g++", (dir + "/main" + judge_id + ".cpp").c_str(), "-O2", "-std=c++20", "-o", judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -128,7 +132,7 @@ int main(int argc, char *argv[]) {
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/gcc", "/usr/bin/gcc", ("main" + judge_id + ".c").c_str(), "-O3", "-o", judge_id.c_str(), NULL);
+			execl("/usr/bin/gcc", "/usr/bin/gcc", (dir + "/main" + judge_id + ".c").c_str(), "-O2", "-o", judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -147,17 +151,16 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
 		run_cmd = "pypy3";
-		run_args = "main" + judge_id + ".py";
+		run_args = dir + "/main" + judge_id + ".py";
 	} else if (strncmp(argv[1], "java", 5) == 0) {
-		// compile Java program into "a.out"
-		rename(("main" + judge_id + ".java").c_str(), ("Main" + judge_id + ".java").c_str());
+		rename((dir + "/main" + judge_id + ".java").c_str(), (dir + "/Main" + judge_id + ".java").c_str());
 		run_cmd = "java";
 		run_args = "Main" + judge_id;
 		pid_t pid = fork();
 		if (pid == 0) {
 			// child process
 			freopen("/dev/null", "w", stderr);
-			execl("/usr/bin/javac", "/usr/bin/javac", ("Main" + judge_id + ".java").c_str(), NULL);
+			execl("/usr/bin/javac", "/usr/bin/javac", (dir + "/Main" + judge_id + ".java").c_str(), "-d", ".", NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -170,7 +173,7 @@ int main(int argc, char *argv[]) {
 				std::cerr << "compiler terminated abnormally" << std::endl;
 				return IE;
 			}
-			rename(("Main" + judge_id + ".java").c_str(), ("main" + judge_id + ".java").c_str()); // dno't question it
+			rename((dir + "/Main" + judge_id + ".java").c_str(), (dir + "/main" + judge_id + ".java").c_str()); // dno't question it
 		} else {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
@@ -180,7 +183,7 @@ int main(int argc, char *argv[]) {
 		return IE;
 	}
 
-	std::fstream init("judge.txt", std::ios::in);
+	std::fstream init(dir + "/judge.txt", std::ios::in);
 	if (!init.is_open()) {
 		std::cerr << "failed to open judge file" << std::endl;
 		return IE;
@@ -209,8 +212,8 @@ int main(int argc, char *argv[]) {
 	std::string in, out;
 	int numcases = 0;
 	while (init >> in >> out) {
-		input_files.push_back("test/" + in);
-		output_files.push_back("test/" + out);
+		input_files.push_back(dir + "/test/" + in);
+		output_files.push_back(dir + "/test/" + out);
 		numcases++;
 	}
 	init.close();
@@ -232,10 +235,8 @@ int main(int argc, char *argv[]) {
 			freopen(input_files[i].c_str(), "r", stdin);
 			freopen(("output" + judge_id + ".txt").c_str(), "w", stdout);
 
-			chmod(("output" + judge_id + ".txt").c_str(), 0662); // all permissions
-			chmod(judge_id.c_str(), 0775); 
-
-			setuid(65534); // nobody (i.e. unprivileged user)
+			chmod(("output" + judge_id + ".txt").c_str(), 0666); // all permissions
+			chmod(judge_id.c_str(), 0777);
 			
 			struct rlimit rlim;
 			rlim.rlim_cur = (time_limit + 999) / 1000;
@@ -255,6 +256,14 @@ int main(int argc, char *argv[]) {
 			}
 
 			ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+
+			umask(0);
+
+			if (setgid(65534) || setuid(65534)) {
+				std::cerr << "failed to drop privileges" << std::endl;
+				return IE;
+			}
+
 			if (run_cmd != "java")
 				execlp(run_cmd.c_str(), run_cmd.c_str(), run_args.c_str(), NULL);
 			else {
@@ -349,6 +358,7 @@ int main(int argc, char *argv[]) {
 							return RTE | ABRT;
 						} else {
 							std::cout << get_memory(pid) << ' ' << get_time(prev_use) << std::endl;
+							std::cerr << "process exit with signal " << sig << std::endl;
 							return RTE;
 						}
 					}
@@ -362,8 +372,6 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	}
-
-	remove(".lock");
 
 	return AC;
 }
