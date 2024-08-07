@@ -65,16 +65,19 @@ function judge(code_file, lang, dir, ws, jid) {
 		child.on('exit', (code) => {
 			if (code >= 8) {
 				// check for bitflags
-				if (code == 24) {
-					buffer = "RTE_(Segmentation_Fault) " + buffer;
-				} else if (code == 40) {
-					buffer = "RTE_(Floating_Point_Error) " + buffer;
-				} else if (code == 72) {
-					buffer = "RTE_(Aborted) " + buffer;
-				} else if (code == 136) {
-					buffer = "RTE_(disallowed_system_call) " + buffer;
+				if (code == 9) {
+					buffer = "RTE%20(Segmentation%20Fault) " + buffer;
+				} else if (code == 10) {
+					buffer = "RTE%20(Floating%20Point%20Error) " + buffer;
+				} else if (code == 11) {
+					buffer = "RTE%20(Aborted) " + buffer;
+				} else if (code == 12) {
+					buffer = "RTE%20(disallowed%20system%20call) " + buffer;
+				} else if (code == 13) {
+					buffer = "RTE%20(illegal%20instruction) " + buffer;
 				} else {
 					// wtf
+					buffer = "RTE " + buffer;
 				}
 			} else {
 				buffer = getVerdict(code) + " " + buffer;

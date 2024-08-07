@@ -171,7 +171,7 @@ export default () => {
                                     return;
                                 }
                                 msg = {
-                                    verdict: msg[0],
+                                    verdict: decodeURI(msg[0]),
                                     memory: msg[1],
                                     time: msg[2],
                                 };
