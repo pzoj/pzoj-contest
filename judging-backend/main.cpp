@@ -12,6 +12,7 @@
 #include <sstream>
 #include <sys/mman.h>
 #include <stdlib.h>
+#include <seccomp.h>
 #include <errno.h>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
@@ -151,7 +152,9 @@ int main(int argc, char *argv[]) {
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
 		run_cmd = "pypy3";
-		run_args = dir + "/main" + judge_id + ".py";
+		// run_args = dir + "/main" + judge_id + ".py";
+		rename((dir + "/main" + judge_id + ".py").c_str(), ("/tmp/main" + judge_id + ".py").c_str());
+		run_args = "/tmp/main" + judge_id + ".py";
 	} else if (strncmp(argv[1], "java", 5) == 0) {
 		rename((dir + "/main" + judge_id + ".java").c_str(), (dir + "/Main" + judge_id + ".java").c_str());
 		run_cmd = "java";
@@ -264,6 +267,82 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 
+			scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
+			for (int fd = 0; fd <= 4; fd++) {
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(close), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pread64), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pwrite64), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(lseek), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getdents64), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(dup), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(dup2), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+			}
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(brk), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(arch_prctl), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(access), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_tid_address), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(get_robust_list), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(futex), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(uname), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(prlimit64), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(readlink), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrandom), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getuid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(geteuid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getgid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getegid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sched_getaffinity), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sched_yield), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(gettid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getpid), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(faccessat2), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(faccessat), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sysinfo), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(madvise), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getcwd), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_nanosleep), 0);
+			seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_getres), 0);
+
+			if (run_cmd == "java") {
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(connect), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(unlink), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mkdir), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ftruncate), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrusage), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(flock), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(prctl), 0);
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fchdir), 0);
+			}
+
+			if (run_cmd != "java") { // temporary while i figure out how to fix java
+				if (seccomp_load(ctx)) {
+					std::cerr << "failed to load seccomp" << std::endl;
+					seccomp_release(ctx);
+					return IE;
+				}
+			}
+
+			seccomp_release(ctx);
+
 			if (run_cmd != "java")
 				execlp(run_cmd.c_str(), run_cmd.c_str(), run_args.c_str(), NULL);
 			else {
@@ -308,6 +387,9 @@ int main(int argc, char *argv[]) {
 					buffer << f.rdbuf();
 					tptr2 = buffer.str();
 					f.close();
+
+					std::cerr << "output: " << tptr1 << std::endl;
+					std::cerr << "expected: " << tptr2 << std::endl;
 
 					if (!(*check)(tptr1, tptr2)) {
 						return WA;

@@ -17,3 +17,4 @@ judge
 key.key
 sedimentation
 *.log
+analyse.py
