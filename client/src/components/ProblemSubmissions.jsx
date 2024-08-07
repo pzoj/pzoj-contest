@@ -35,7 +35,7 @@ const ProblemSubmissions = (props) => {
                             return (
                                 <tr key={idx} className={`text-center text-grey-1 ${idx & 1 && "bg-dark-2"}`}>
                                     <td className="py-3">{idx + 1}</td>
-                                    <td className="py-3">{test.time / 1000}s</td>
+                                    <td className="py-3">{test.verdict == "TLE" ? ">" : ""}{test.time / 1000}s</td>
                                     <td className="py-3">{(test.memory / 1024).toFixed(2)}MB</td>
                                     <td className={`py-3 ${test.verdict == "AC" ? "text-emerald-400" : "text-red-500"}`}>{test.verdict}</td>
                                 </tr>
