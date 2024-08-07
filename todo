@@ -1,8 +1,5 @@
 TODO:
-- Timer/countdown on the main contest page
-- Make a live leaderboard page
+- Prettify the live leaderboard page
 	- When a user submits, their box turns into a ? and then updates with their score
 	- If they go up a place, it plays an animation showing them moving up
-- Add some kind of order of problems to the leaderboard (order them by difficulty?)
-- Logging out doesn't actually log you out
 - potentially put submissions in /tmp instead of the problem dir

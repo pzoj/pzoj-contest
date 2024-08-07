@@ -115,6 +115,11 @@ app.post('/api/login', (req, res) => {
 	});
 });
 
+app.get('/api/logout', (req, res) => {
+	res.clearCookie('token');
+	res.redirect('/');
+});
+
 app.post('/api/register', (req, res) => {
 	if (req.cookies == undefined) {
 		res.end();
@@ -203,33 +208,6 @@ app.get('/api/resetaccounts', (req, res) => {
 const allowedLanguages = ['cpp', 'c', 'py', 'java'];
 
 /* ------------------ CONTESTS ------------------ */
-
-// let leaderboard = [
-// 	{
-// 		'username': 'kevlu8',
-// 		'points': 500,
-// 		'penaltytime': 1000,
-// 		'problems': {
-// 			'1': {score: 100, penalty: 200},
-// 			'2': {score: 100, penalty: 200},
-// 			'3': {score: 100, penalty: 200},
-// 			'4': {score: 100, penalty: 200},
-// 			'5': {score: 100, penalty: 200}
-// 		}
-// 	},
-// 	{
-// 		'username': 'test',
-// 		'points': 300,
-// 		'penaltytime': 10,
-// 		'problems': {
-// 			'1': {score: 100, penalty: 3},
-// 			'2': {score: 0, penalty: 0},
-// 			'3': {score: 100, penalty: 5},
-// 			'4': {score: 100, penalty: 2},
-// 			'5': {score: 0, penalty: 0}
-// 		}
-// 	}
-// ];
 
 let leaderboard = [];
 let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
@@ -350,7 +328,7 @@ app.get('/api/problems', (req, res) => {
 	}
 	// compare current time and contest start time
 	let curtime = Math.floor(Date.now() / 1000);
-	if (curtime < starttime) {
+	if (curtime < starttime || curtime > endtime) {
 		res.end();
 		return;
 	}
@@ -396,6 +374,12 @@ app.get('/api/problem/:pid', (req, res) => {
 		return;
 	}
 
+	let curtime = Math.floor(Date.now() / 1000);
+	if (curtime < starttime || curtime > endtime) {
+		res.end();
+		return;
+	}
+
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
 	fs.readFile(path.join(problem_path, 'problem.md'), (err, data) => {
 		if (err) {
@@ -422,6 +406,12 @@ app.get('/api/problem/:pid/meta', (req, res) => {
 	}
 	username = verifyToken(username);
 	if (username == null) {
+		res.end();
+		return;
+	}
+
+	let curtime = Math.floor(Date.now() / 1000);
+	if (curtime < starttime || curtime > endtime) {
 		res.end();
 		return;
 	}
@@ -503,11 +493,12 @@ app.get('/api/resetleaderboard', (req, res) => {
 function resetleaderboard() {
 	leaderboard = [];
 	let problems = [];
-	let conteststarttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
 	fs.readdirSync(path.join(cwd(), '..', 'problems')).forEach((file) => {
 		if (file.startsWith('.'))
 			return;
-		problems.push(file);
+		problems.push([file, 0]);
+		// get difficulty of problem
+		problems[problems.length - 1][1] = parseInt(fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')[1]);
 	});
 	db.serialize(() => {
 		db.run('BEGIN IMMEDIATE TRANSACTION'); // ignore admin
@@ -527,7 +518,7 @@ function resetleaderboard() {
 					'problems': {}
 				});
 				problems.forEach((problem) => {
-					leaderboard[leaderboard.length - 1].problems[problem] = {score: 0, penalty: 0};
+					leaderboard[leaderboard.length - 1].problems[problem[0]] = {score: 0, penalty: 0, difficulty: problem[1]};
 				});
 			});
 		});
@@ -551,7 +542,7 @@ function resetleaderboard() {
 				if (row.result == 'AC') {
 					leaderboard[userindex].problems[row.problemid].score = 100;
 					leaderboard[userindex].problems[row.problemid].penalty *= 10;
-					leaderboard[userindex].problems[row.problemid].penalty = Math.floor(row.timestamp / 60 - conteststarttime / 60);
+					leaderboard[userindex].problems[row.problemid].penalty += Math.floor(row.timestamp / 60 - starttime / 60);
 					leaderboard[userindex].points += 100;
 					leaderboard[userindex].penaltytime += leaderboard[userindex].problems[row.problemid].penalty;
 				} else if (row.result != 'CE') {
@@ -698,7 +689,6 @@ wss.on('connection', (ws) => {
 				let userindex = leaderboard.findIndex((e) => e.username == user);
 				if (leaderboard[userindex].problems[data.pid].score == 100)
 					return;
-				let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
 				leaderboard[userindex].problems[data.pid].score = 100;
 				// existing penalty is # of wrong submissions
 				leaderboard[userindex].problems[data.pid].penalty *= 10;

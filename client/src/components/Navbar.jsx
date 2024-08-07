@@ -86,12 +86,10 @@ const Navbar = (props) => {
 										
 										<div className="m-auto w-full">
 											<DangerButton
-												link="/"
+												link="/api/logout"
 												target="_self"
 												text="Sign Out"
 												onClick={(e) => {
-													e.preventDefault();
-
 													localStorage.removeItem("token");
 													setUsername(null);
 												}}
