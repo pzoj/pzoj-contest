@@ -16,10 +16,11 @@
 	- problem stars
 	- problem tag
 
-- web backend MUST remove code_file, output.txt, and a.out after judging
+- web backend MUST remove code_file after judging
+- everything else goes into /tmp so maybe clear that out every once in a while
 
 - judge output in stdout is of the format:
-	- (memory) (time)
+	- (verdict) (memory) (time)
 	- ...
 - each line is a test case
 - judge returns the following codes:

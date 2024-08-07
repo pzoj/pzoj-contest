@@ -166,7 +166,7 @@ export default () => {
                                 }
                                 msg = msg.split(" ");
                                 if (msg[0] == "FIN") {
-                                    setVerdict(msg[1]);
+                                    setVerdict(decodeURI(msg[1]));
 									setDone(true);
                                     return;
                                 }

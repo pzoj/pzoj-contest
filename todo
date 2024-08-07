@@ -5,3 +5,4 @@ TODO:
 	- If they go up a place, it plays an animation showing them moving up
 - Add some kind of order of problems to the leaderboard (order them by difficulty?)
 - Logging out doesn't actually log you out
+- potentially put submissions in /tmp instead of the problem dir

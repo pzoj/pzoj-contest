@@ -376,11 +376,11 @@ int main(int argc, char *argv[]) {
 				if (WIFEXITED(status)) {
 					chld_time = get_time(prev_use);
 					if (WEXITSTATUS(status) != 0) {
-						std::cout << chld_mem << ' ' << chld_time << std::endl;
+						std::cout << "IR " << chld_mem << ' ' << chld_time << std::endl;
 						return IR;
 					}
 					if (chld_time > time_limit) {
-						std::cout << chld_mem << ' ' << chld_time << std::endl;
+						std::cout << "TLE " << chld_mem << ' ' << chld_time << std::endl;
 						return TLE;
 					}
 					// check output
@@ -405,15 +405,17 @@ int main(int argc, char *argv[]) {
 					tptr2 = buffer.str();
 					f.close();
 
-					std::cout << chld_mem << ' ' << chld_time << std::endl;
-
 					if (chld_mem > memory_limit * 1024) {
+						std::cout << "MLE " << chld_mem << ' ' << chld_time << std::endl;
 						return MLE;
 					}
 
 					if (!(*check)(tptr1, tptr2)) {
+						std::cout << "WA " << chld_mem << ' ' << chld_time << std::endl;
 						return WA;
 					}
+
+					std::cout << "AC " << chld_mem << ' ' << chld_time << std::endl;
 					break;
 				} else if (WIFSTOPPED(status)) {
 					int sig = WSTOPSIG(status);
@@ -436,10 +438,10 @@ int main(int argc, char *argv[]) {
 						chld_mem = std::max(get_memory(pid), chld_mem);
 						chld_time = get_time(prev_use);
 						if (sig == SIGXCPU) {
-							std::cout << chld_mem << ' ' << time_limit << std::endl;
+							std::cout << "TLE " << chld_mem << ' ' << time_limit << std::endl;
 							return TLE;
 						}
-						std::cout << chld_mem << ' ' << chld_time << std::endl;
+						std::cout << "RTE " << chld_mem << ' ' << chld_time << std::endl;
 						if (sig == SIGSEGV) {
 							return SEGV;
 						} else if (sig == SIGFPE) {
@@ -455,6 +457,7 @@ int main(int argc, char *argv[]) {
 						}
 					}
 				} else {
+					std::cout << "RTE " << chld_mem << ' ' << chld_time << std::endl;
 					std::cerr << "program terminated abnormally" << std::endl;
 					return RTE;
 				}

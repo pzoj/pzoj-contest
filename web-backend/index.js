@@ -61,7 +61,24 @@ function verifyToken(token) {
 	return token.username;
 }
 
+let ips = {};
+
 app.post('/api/login', (req, res) => {
+	let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+	if (ips[ip] == undefined) {
+		ips[ip] = 0;
+		console.log(ip);
+	} else {
+		ips[ip]++;
+	}
+	if (ips[ip] > 100) {
+		res.status(429);
+		res.end();
+		return;
+	}
+	setTimeout(() => {
+		ips[ip]--;
+	}, 1000 * 60);
 	let username = req.body.username;
 	let password = req.body.password;
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
@@ -285,6 +302,21 @@ app.get('/api/contest/meta', (req, res) => {
 });
 
 app.get('/api/contest/leaderboard', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username == null) {
+		res.end();
+		return;
+	}
+
 	// return the leaderboard but sorted
 	leaderboard.sort((a, b) => {
 		if (a.points < b.points)
