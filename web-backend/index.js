@@ -536,15 +536,15 @@ function resetleaderboard() {
 			}
 			rows.forEach((row) => {
 				let userindex = leaderboard.findIndex((e) => e.username == row.username);
-				if (leaderboard[userindex].problems[row.problemid].score == 100) {
+				if (leaderboard[userindex].problems[row.problemid].score) {
 					return; // skip if already AC
 				}
 				if (row.result == 'AC') {
-					leaderboard[userindex].problems[row.problemid].score = 100;
+					leaderboard[userindex].problems[row.problemid].score = leaderboard[userindex].problems[row.problemid].penalty+1;
 					leaderboard[userindex].problems[row.problemid].penalty *= 10;
-					leaderboard[userindex].problems[row.problemid].penalty += Math.floor(row.timestamp / 60 - starttime / 60);
+					leaderboard[userindex].penaltytime += leaderboard[userindex].problems[row.problemid].penalty + Math.floor(row.timestamp / 60 - starttime / 60);
+					leaderboard[userindex].problems[row.problemid].penalty = Math.floor(row.timestamp / 60 - starttime / 60);
 					leaderboard[userindex].points += 100;
-					leaderboard[userindex].penaltytime += leaderboard[userindex].problems[row.problemid].penalty;
 				} else if (row.result != 'CE') {
 					leaderboard[userindex].problems[row.problemid].score = 0;
 					leaderboard[userindex].problems[row.problemid].penalty += 1;
@@ -687,17 +687,17 @@ wss.on('connection', (ws) => {
 			if (res[res.length - 1].startsWith('AC')) {
 				// update leaderboard
 				let userindex = leaderboard.findIndex((e) => e.username == user);
-				if (leaderboard[userindex].problems[data.pid].score == 100)
+				if (leaderboard[userindex].problems[data.pid].score)
 					return;
-				leaderboard[userindex].problems[data.pid].score = 100;
+				leaderboard[userindex].problems[data.pid].score = leaderboard[userindex].problems[data.pid].penalty+1;
 				// existing penalty is # of wrong submissions
 				leaderboard[userindex].problems[data.pid].penalty *= 10;
-				leaderboard[userindex].problems[data.pid].penalty += Math.floor(subtime / 60 - starttime / 60);
+				leaderboard[userindex].penaltytime += leaderboard[userindex].problems[data.pid].penalty + Math.floor(subtime / 60 - starttime / 60);
+				leaderboard[userindex].problems[data.pid].penalty = Math.floor(subtime / 60 - starttime / 60);
 				leaderboard[userindex].points += 100;
-				leaderboard[userindex].penaltytime += leaderboard[userindex].problems[data.pid].penalty;
 			} else if (!res[res.length - 1].startsWith('CE')) {
 				let userindex = leaderboard.findIndex((e) => e.username == user);
-				if (leaderboard[userindex].problems[data.pid].score == 100)
+				if (leaderboard[userindex].problems[data.pid].score)
 					return;
 				leaderboard[userindex].problems[data.pid].score = 0;
 				leaderboard[userindex].problems[data.pid].penalty += 1; // indicate a wrong submission

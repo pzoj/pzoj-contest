@@ -3,3 +3,4 @@ TODO:
 	- When a user submits, their box turns into a ? and then updates with their score
 	- If they go up a place, it plays an animation showing them moving up
 - potentially put submissions in /tmp instead of the problem dir
+- rate limit submissions per user
