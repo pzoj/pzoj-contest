@@ -36,8 +36,8 @@ const Leaderboard = ({ users }) => {
 							))} */}
 							{/*sort the problems based on problems[i].difficulty*/}
 							{Object.keys(user.problems).sort((a, b) => user.problems[a].difficulty - user.problems[b].difficulty).map((key, index) => (
-								<td className={`border border-stone-400 p-3 ${user.problems[key].score==100?"text-green-500":"text-red-500"} text-center`} key={index}>
-									{user.problems[key].penalty?user.problems[key].score:""} {user.problems[key].penalty?`(${user.problems[key].penalty})`:""}
+								<td className={`border border-stone-400 p-3 ${user.problems[key].score?"text-green-500":"text-red-500"} text-center`} key={index}>
+									{user.problems[key].penalty?(user.problems[key].score?`+${user.problems[key].score>1?user.problems[key].score-1:""}`:"-"):""} {user.problems[key].penalty?`(${user.problems[key].penalty})`:""}
 								</td>
 							))}
 							<td className='border border-stone-400 p-3 text-center'>{user.points}</td>

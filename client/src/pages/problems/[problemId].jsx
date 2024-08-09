@@ -129,6 +129,9 @@ export default () => {
 								alert("Please wait for the current submission to finish before submitting again.");
 								return;
 							}
+							if (!val || val.length == 0) {
+								alert("Code is empty");
+							}
                             if (val.length > 65536) { // 64KB
                                 alert("Code too long");
                                 return;

@@ -86,8 +86,9 @@ std::string format_datetime() {
 int main(int argc, char *argv[]) {
 	freopen("log.log", "a", stderr);
 	
-	std::cerr << "--- JUDGING AT " << format_datetime() << " ---" << std::endl;
+	std::cerr << "\n\n--- JUDGING AT " << format_datetime() << " ---" << std::endl;
 	std::cerr << "PROBLEM: " << argv[2] << std::endl;
+	std::cerr << "SUBMISSION ID: " << argv[3] << std::endl;
 	// argv[1] is the language that the program is written in
 	// argv[2] is the directory of the problem
 	// argv[3] is the submission id, a unique id
@@ -104,6 +105,15 @@ int main(int argc, char *argv[]) {
 	std::string dir = argv[2];
 	std::string judge_id = argv[3];
 	std::string run_cmd = judge_id, run_args = "";
+
+	// copy code file to /tmp just in case we need to look at it in the case of an internal error
+	std::string code_file = dir + "/main" + judge_id + "." + argv[1];
+	std::ifstream src(code_file, std::ios::binary);
+	std::ofstream dst("/tmp/main" + judge_id + "." + argv[1], std::ios::binary);
+	dst << src.rdbuf();
+	src.close();
+	dst.close();
+
 	if (strncmp(argv[1], "cpp", 4) == 0) {
 		run_cmd = "./" + judge_id;
 		// compile C++ program
