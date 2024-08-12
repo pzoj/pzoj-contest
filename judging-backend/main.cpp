@@ -461,7 +461,6 @@ int main(int argc, char *argv[]) {
 						} else if (sig == SIGILL) {
 							return ILL;
 						} else {
-							std::cout << chld_mem << ' ' << chld_time << std::endl;
 							std::cerr << "process exit with signal " << sig << std::endl;
 							return RTE;
 						}
