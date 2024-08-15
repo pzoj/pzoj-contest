@@ -1,26 +1,28 @@
 #include "checkers.hpp"
 
-void tokenize(std::string &s, std::vector<std::string> &tokens) {
-	std::string curr = "";
-	for (int i = 0; i <= s.size(); i++) {
-		if ((i == s.size() || s[i] == ' ' || s[i] == '\n' || s[i] == '\t')) {
-			if (curr.empty()) continue;
-			tokens.push_back(curr);
-			curr.clear();
-		}
-		else curr.push_back(s[i]);
-	}
+inline bool is_whitespace(char c) {
+	return c == ' ' || c == '\n' || c == '\t' || c == '\r';
 }
 
 bool default_checker(std::string &output, std::string &expected_output) {
-	std::vector<std::string> tok_output, tok_expected_output;
-
-	tokenize(output, tok_output);
-	tokenize(expected_output, tok_expected_output);
-
-	if (tok_output.size() != tok_expected_output.size()) return 0;
-	for (int i = 0; i < tok_output.size(); i++) {
-		if (tok_output[i] != tok_expected_output[i]) return 0;
+	int p = 0, p2 = 0;
+	bool expspace = 1, outspace = 1;
+	while (p < expected_output.size()) {
+		while (p < expected_output.size() && is_whitespace(expected_output[p])) {
+			p++;
+			expspace = 1;
+		}
+		while (p2 < output.size() && is_whitespace(output[p2])) {
+			p2++;
+			outspace = 1;
+		}
+		if (expspace != outspace && p < expected_output.size() && p2 < output.size()) return 0;
+		if (p >= expected_output.size() && p2 >= output.size()) return 1;
+		else if (p >= expected_output.size() != p2 >= output.size()) return 0;
+		if (output[p2] != expected_output[p]) return 0;
+		p++, p2++;
+		expspace = 0;
+		outspace = 0;
 	}
 	return 1;
 }

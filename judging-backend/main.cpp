@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 				}
 			} else {
 				std::cerr << "compiler terminated abnormally" << std::endl;
-				return IE;
+				return CE; // *could* be IE but its probably not our fault
 			}
 		} else {
 			std::cerr << "fork failed" << std::endl;
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
 				}
 			} else {
 				std::cerr << "compiler terminated abnormally" << std::endl;
-				return IE;
+				return CE;
 			}
 		} else {
 			std::cerr << "fork failed" << std::endl;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
 				}
 			} else {
 				std::cerr << "compiler terminated abnormally" << std::endl;
-				return IE;
+				return CE;
 			}
 			rename((dir + "/Main" + judge_id + ".java").c_str(), (dir + "/main" + judge_id + ".java").c_str()); // dno't question it
 		} else {
@@ -266,11 +266,10 @@ int main(int argc, char *argv[]) {
 			freopen(input_files[i].c_str(), "r", stdin);
 			freopen(("output" + judge_id + ".txt").c_str(), "w", stdout);
 
-			chmod(("output" + judge_id + ".txt").c_str(), 0666); // all permissions
 			chmod(judge_id.c_str(), 0777);
 			
 			struct rlimit rlim;
-			rlim.rlim_cur = (time_limit + 999) / 1000;
+			rlim.rlim_cur = (time_limit + 999) / 1000; // round up to the next second so we dont prematurely kill processes with decimal TLs
 			rlim.rlim_max = (time_limit + 999) / 1000 + 1;
 			if (setrlimit(RLIMIT_CPU, &rlim)) {
 				std::cerr << "failed to set time limit" << std::endl;
@@ -286,6 +285,13 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
+			rlim.rlim_cur = 16777216;
+			rlim.rlim_max = 16777216;
+			if (setrlimit(RLIMIT_FSIZE, &rlim)) {
+				std::cerr << "failed to set output limit" << std::endl;
+				return IE;
+			}
+
 			ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
 			umask(0);
@@ -298,7 +304,9 @@ int main(int argc, char *argv[]) {
 			scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
 			for (int fd = 0; fd <= 4; fd++) {
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(readv), 1, SCMP_A0(SCMP_CMP_EQ, fd));
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 1, SCMP_A0(SCMP_CMP_EQ, fd));
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(writev), 1, SCMP_A0(SCMP_CMP_EQ, fd));
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1, SCMP_A0(SCMP_CMP_EQ, fd));
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(close), 1, SCMP_A0(SCMP_CMP_EQ, fd));
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pread64), 1, SCMP_A0(SCMP_CMP_EQ, fd));
@@ -451,6 +459,10 @@ int main(int argc, char *argv[]) {
 							std::cout << "TLE " << chld_mem << ' ' << time_limit << std::endl;
 							return TLE;
 						}
+						else if (sig == SIGXFSZ) {
+							std::cout << "OLE " << chld_mem << ' ' << chld_time << std::endl;
+							return OLE;
+						}
 						std::cout << "RTE " << chld_mem << ' ' << chld_time << std::endl;
 						if (sig == SIGSEGV) {
 							return SEGV;
@@ -465,10 +477,6 @@ int main(int argc, char *argv[]) {
 							return RTE;
 						}
 					}
-				} else {
-					std::cout << "RTE " << chld_mem << ' ' << chld_time << std::endl;
-					std::cerr << "program terminated abnormally" << std::endl;
-					return RTE;
 				}
 			}
 		} else {
@@ -476,6 +484,5 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	}
-
 	return AC;
 }

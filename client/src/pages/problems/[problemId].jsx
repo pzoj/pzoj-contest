@@ -131,6 +131,7 @@ export default () => {
 							}
 							if (!val || val.length == 0) {
 								alert("Code is empty");
+								return;
 							}
                             if (val.length > 65536) { // 64KB
                                 alert("Code too long");

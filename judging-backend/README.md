@@ -1,10 +1,9 @@
 # judging backend
 
 - judging should be run with the following command:
-./judge <language> <problem_dir> <judge_id>
+`./judge <language> <problem_dir> <judge_id>`
 - each problem directory should have a "problem.md" file "editorial.md", "judge.txt", "meta.txt", and a "test" directory
 - the test directory should contain the test cases referenced in judge.txt (without "test/")
-- do NOT set the problem directory as the test directory
 - test case file names cannot be over 32 characters (just why?)
 - problem.md should contain the problem description
 - judge.txt should contain the problem metadata:
@@ -33,7 +32,8 @@
 	- 6: compilation error
 	- 7: invalid return
 	- 8: runtime error
-	- 8|16: segmentation fault
-	- 8|32: floating point exception
-	- 8|64: aborted
-	- 8|128: disallowed system call
+	- 9: segmentation fault
+	- 10: floating point exception
+	- 11: aborted
+	- 12: disallowed system call
+	- 13: illegal instruction
