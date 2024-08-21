@@ -1,0 +1,3 @@
+[submodule "sedimentation-assembler"]
+	path = sedimentation-assembler
+	url = https://github.com/corrosion-language/sedimentation-assembler
