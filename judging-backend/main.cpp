@@ -215,6 +215,69 @@ int main(int argc, char *argv[]) {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
+	} else if (strncmp(argv[1], "asm", 4) == 0) {
+		run_cmd = "./" + judge_id;
+		// assemble program
+		pid_t pid = fork();
+		if (pid == 0) {
+			// child process
+			struct rlimit rlim;
+			rlim.rlim_cur = 5;
+			rlim.rlim_max = 5;
+			if (setrlimit(RLIMIT_CPU, &rlim)) {
+				std::cerr << "failed to set compiler time limit" << std::endl;
+				return IE;
+			}
+
+			std::string asm_filepath = dir + "/../../sedimentation-assembler/sedimentation";
+			const char *asm_filepath_c = asm_filepath.c_str();
+			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf", "-o", (judge_id + ".o").c_str(), NULL);
+		} else if (pid > 0) {
+			// parent process
+			int status;
+			waitpid(pid, &status, 0);
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					return CE;
+				}
+			} else {
+				std::cerr << "sedimentation terminated abnormally" << std::endl;
+				return CE;
+			}
+		} else {
+			std::cerr << "fork failed" << std::endl;
+			return IE;
+		}
+
+		// link program
+		pid = fork();
+		if (pid == 0) {
+			// child process
+			struct rlimit rlim;
+			rlim.rlim_cur = 5;
+			rlim.rlim_max = 5;
+			if (setrlimit(RLIMIT_CPU, &rlim)) {
+				std::cerr << "failed to set compiler time limit" << std::endl;
+				return IE;
+			}
+
+			execl("/usr/bin/ld", "/usr/bin/ld", (judge_id + ".o").c_str(), "-o", judge_id.c_str(), NULL);
+		} else if (pid > 0) {
+			// parent process
+			int status;
+			waitpid(pid, &status, 0);
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					return CE;
+				}
+			} else {
+				std::cerr << "linker terminated abnormally" << std::endl;
+				return CE;
+			}
+		} else {
+			std::cerr << "fork failed" << std::endl;
+			return IE;
+		}
 	} else {
 		std::cerr << "website passed unknown language to judge" << std::endl;
 		return IE;

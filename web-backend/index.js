@@ -205,7 +205,7 @@ app.get('/api/resetaccounts', (req, res) => {
 	});
 });
 
-const allowedLanguages = ['cpp', 'c', 'py', 'java'];
+const allowedLanguages = ["cpp", "c", "py", "java", "asm"];
 
 /* ------------------ CONTESTS ------------------ */
 
