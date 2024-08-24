@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
 
 			std::string asm_filepath = dir + "/../../sedimentation-assembler/sedimentation";
 			const char *asm_filepath_c = asm_filepath.c_str();
-			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf", "-o", (judge_id + ".o").c_str(), NULL);
+			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf64", "-o", (judge_id + ".o").c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
