@@ -1,29 +1,27 @@
+#include <errno.h>
 #include <fstream>
 #include <iostream>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <signal.h>
-#include <string>
-#include <string.h>
-#include <sstream>
-#include <sys/mman.h>
-#include <stdlib.h>
 #include <seccomp.h>
-#include <errno.h>
-#include <sys/ptrace.h>
-#include <sys/resource.h>
-#include <sys/user.h>
-#include <sys/reg.h>
 #include <signal.h>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <sys/mman.h>
+#include <sys/ptrace.h>
+#include <sys/reg.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/user.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
-#include "syscalls.h"
 #include "checkers.hpp"
+#include "syscalls.h"
 
 #define AC 0
 #define WA 1
@@ -79,13 +77,14 @@ std::string format_datetime() {
 	// format in YYYY/MM/DD HH:MM:SS
 	time_t now = time(0);
 	tm *ltm = localtime(&now);
-	std::string datetime = std::to_string(1900 + ltm->tm_year) + '/' + std::to_string(1 + ltm->tm_mon) + '/' + std::to_string(ltm->tm_mday) + ' ' + std::to_string(ltm->tm_hour) + ':' + std::to_string(ltm->tm_min) + ':' + std::to_string(ltm->tm_sec);
+	std::string datetime = std::to_string(1900 + ltm->tm_year) + '/' + std::to_string(1 + ltm->tm_mon) + '/' + std::to_string(ltm->tm_mday) + ' ' +
+						   std::to_string(ltm->tm_hour) + ':' + std::to_string(ltm->tm_min) + ':' + std::to_string(ltm->tm_sec);
 	return datetime;
 }
 
 int main(int argc, char *argv[]) {
 	freopen("log.log", "a", stderr);
-	
+
 	std::cerr << "\n\n--- JUDGING AT " << format_datetime() << " ---" << std::endl;
 	std::cerr << "PROBLEM: " << argv[2] << std::endl;
 	std::cerr << "SUBMISSION ID: " << argv[3] << std::endl;
@@ -231,7 +230,7 @@ int main(int argc, char *argv[]) {
 
 			std::string asm_filepath = dir + "/../../sedimentation-assembler/sedimentation";
 			const char *asm_filepath_c = asm_filepath.c_str();
-			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf", "-o", (judge_id + ".o").c_str(), NULL);
+			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf64", "-o", (judge_id + ".o").c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -330,7 +329,7 @@ int main(int argc, char *argv[]) {
 			freopen(("output" + judge_id + ".txt").c_str(), "w", stdout);
 
 			chmod(judge_id.c_str(), 0777);
-			
+
 			struct rlimit rlim;
 			rlim.rlim_cur = (time_limit + 999) / 1000; // round up to the next second so we dont prematurely kill processes with decimal TLs
 			rlim.rlim_max = (time_limit + 999) / 1000 + 1;
@@ -338,7 +337,7 @@ int main(int argc, char *argv[]) {
 				std::cerr << "failed to set time limit" << std::endl;
 				return IE;
 			}
-			
+
 			if (run_cmd != "java") {
 				rlim.rlim_cur = 1024 * 1024 * 1024;
 				rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
@@ -521,8 +520,7 @@ int main(int argc, char *argv[]) {
 						if (sig == SIGXCPU) {
 							std::cout << "TLE " << chld_mem << ' ' << time_limit << std::endl;
 							return TLE;
-						}
-						else if (sig == SIGXFSZ) {
+						} else if (sig == SIGXFSZ) {
 							std::cout << "OLE " << chld_mem << ' ' << chld_time << std::endl;
 							return OLE;
 						}
