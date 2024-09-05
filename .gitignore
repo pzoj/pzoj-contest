@@ -7,7 +7,7 @@ db.db
 
 */node_modules/
 */.next/
-client/build/
+build/
 */.vercel
 */npm-debug.log*
 */yarn-debug.log*
