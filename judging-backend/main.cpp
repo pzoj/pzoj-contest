@@ -38,6 +38,24 @@
 #define DIS_SYS 12
 #define ILL 13
 
+// Compiler config
+// Remove the #ifndef and #endif lines if you want to hardcode, otherwise it will use defaults set by CMake
+#ifndef CXX_PATH
+#define CXX_PATH "/usr/bin/g++"
+#endif
+#ifndef C_PATH
+#define C_PATH "/usr/bin/gcc"
+#endif
+#ifndef ASM_PATH
+#define ASM_PATH "/usr/bin/nasm"
+#endif
+#ifndef PYTHON_PATH
+#define PYTHON_PATH "/usr/bin/pypy3"
+#endif
+#define CXX_ARGS "-O2", "-std=c++20"
+#define C_ARGS "-O2", "-o"
+#define ASM_ARGS "-felf64"
+
 std::vector<std::string> input_files, output_files;
 
 typedef bool (*func_ptr)(std::string &, std::string &);
@@ -128,7 +146,7 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 
-			execl("/usr/bin/g++", "/usr/bin/g++", (dir + "/main" + judge_id + ".cpp").c_str(), "-O2", "-std=c++20", "-o", judge_id.c_str(), NULL);
+			execl(CXX_PATH, CXX_PATH, (dir + "/main" + judge_id + ".cpp").c_str(), CXX_ARGS, "-o", judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -159,7 +177,7 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 
-			execl("/usr/bin/gcc", "/usr/bin/gcc", (dir + "/main" + judge_id + ".c").c_str(), "-O2", "-o", judge_id.c_str(), NULL);
+			execl(C_PATH, C_PATH, (dir + "/main" + judge_id + ".c").c_str(), C_ARGS, judge_id.c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
@@ -177,7 +195,7 @@ int main(int argc, char *argv[]) {
 			return IE;
 		}
 	} else if (strncmp(argv[1], "py", 3) == 0) {
-		run_cmd = "pypy3";
+		run_cmd = PYTHON_PATH;
 		// run_args = dir + "/main" + judge_id + ".py";
 		rename((dir + "/main" + judge_id + ".py").c_str(), ("/tmp/main" + judge_id + ".py").c_str());
 		run_args = "/tmp/main" + judge_id + ".py";
@@ -228,9 +246,7 @@ int main(int argc, char *argv[]) {
 				return IE;
 			}
 
-			std::string asm_filepath = dir + "/../../sedimentation-assembler/sedimentation";
-			const char *asm_filepath_c = asm_filepath.c_str();
-			execl(asm_filepath_c, asm_filepath_c, (dir + "/main" + judge_id + ".asm").c_str(), "-f", "elf64", "-o", (judge_id + ".o").c_str(), NULL);
+			execl(ASM_PATH, ASM_PATH, (dir + "/main" + judge_id + ".asm").c_str(), ASM_ARGS, "-o", (judge_id + ".o").c_str(), NULL);
 		} else if (pid > 0) {
 			// parent process
 			int status;
