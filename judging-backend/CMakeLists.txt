@@ -15,4 +15,5 @@ add_custom_target(build_judge ALL
 	DEPENDS judge
 	COMMENT "Give the judge file permission to drop permissions"
 	COMMAND sudo setcap cap_setuid,cap_setgid=eip ./judge
+	COMMAND ln -s ${CMAKE_CURRENT_BINARY_DIR}/judge ${CMAKE_CURRENT_SOURCE_DIR}/judge
 )
