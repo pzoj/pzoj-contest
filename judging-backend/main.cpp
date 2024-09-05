@@ -49,9 +49,9 @@
 #ifndef ASM_PATH
 #define ASM_PATH "/usr/bin/nasm"
 #endif
-#ifndef PYTHON_PATH
+// #ifndef PYTHON_PATH
 #define PYTHON_PATH "/usr/bin/pypy3"
-#endif
+// #endif
 #define CXX_ARGS "-O2", "-std=c++20"
 #define C_ARGS "-O2", "-o"
 #define ASM_ARGS "-felf64"
