@@ -1,12 +1,12 @@
-#include <errno.h>
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <seccomp.h>
-#include <signal.h>
+#include <csignal>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
