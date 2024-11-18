@@ -8,7 +8,7 @@ const PrimaryButton = (props) => {
 			type={submit && "submit"}
 			href={link}
 			target={target}
-			rel={target == "_blank" ? "noopener noreferrer" : ""}
+			rel={target === "_blank" ? "noopener noreferrer" : ""}
 			className={(props.className || '') + ` relative p-0.5 inline-flex items-center justify-center overflow-hidden group rounded-lg ${fullWidth && "w-full"}`}
 			onClick={onClick}
 		>

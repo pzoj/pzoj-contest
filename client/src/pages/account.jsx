@@ -178,7 +178,7 @@ export default () => {
 
 												return;
 											}
-											if (confirmPassword != password) {
+											if (confirmPassword !== password) {
 												setShowRegisterEmptyFieldError(false);
 												setShowRegisterPasswordMismatchError(true);
 												setShowRegisterUsernameTakenError(false);
@@ -195,7 +195,7 @@ export default () => {
 												window.location.href = "/problems";
 											}).catch((err) => {
 												let code = err.response.status;
-												if (code == 409) {
+												if (code === 409) {
 													// username taken
 													setShowRegisterEmptyFieldError(false);
 													setShowRegisterPasswordMismatchError(false);
@@ -203,7 +203,7 @@ export default () => {
 													setShowServerError(false);
 
 													console.log(localStorage.getItem('token'));
-												} else if (code == 500) {
+												} else if (code === 500) {
 													// server error
 
 													setShowRegisterEmptyFieldError(false);
@@ -239,21 +239,21 @@ export default () => {
 												window.location.href = "/problems";
 											}).catch((err) => {
 												let code = err.response.status;
-												if (code == 404) {
+												if (code === 404) {
 													// user not found
 
 													setShowLoginError(true);
 													setShowLoginPasswordError(false);
 													setShowServerError(false);
 													setShowLoginEmptyFieldError(false);
-												} else if (code == 401) {
+												} else if (code === 401) {
 													// wrong password
 
 													setShowLoginError(false);
 													setShowLoginPasswordError(true);
 													setShowServerError(false);
 													setShowLoginEmptyFieldError(false);
-												} else if (code == 500) {
+												} else if (code === 500) {
 													// server error
 
 													setShowLoginError(false);

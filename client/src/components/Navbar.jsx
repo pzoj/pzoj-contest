@@ -66,7 +66,7 @@ const Navbar = (props) => {
 								<FontAwesomeIcon
 									icon={faUserCircle}
 									className={`inline-block text-grey-1 text-xl w-[1.8rem] cursor-pointer transition duration-200 hover:text-white-0 ${showSettings && "text-white-0"}`}
-									onClick={(e) => {
+									onClick={() => {
 										setShowSettings((prev) => !prev);
 									}}
 								/>
@@ -89,7 +89,7 @@ const Navbar = (props) => {
 												link="/api/logout"
 												target="_self"
 												text="Sign Out"
-												onClick={(e) => {
+												onClick={() => {
 													localStorage.removeItem("token");
 													setUsername(null);
 												}}
@@ -101,22 +101,6 @@ const Navbar = (props) => {
 						</div>
 					)}
 				</div>
-
-				{/* (<PrimaryButton
-				link="/"
-				target="_self"
-				bgColor="dark-2"
-				text={
-					<span className="flex flex-col justify-center items-center">
-						<FontAwesomeIcon icon={faUserCircle} className="text-grey-1 text-xl w-[1rem]" />
-					</span>
-				}
-				// text={`Logout ${username}`}
-				onClick={() => {
-					localStorage.removeItem("token");
-					setUsername(null);
-				}}
-			/>) */}
 			</div>
 		</nav>
 	);

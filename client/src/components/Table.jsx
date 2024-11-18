@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircleCheck, faCircleXmark, faFile, faStar } from "@fortawesome/free-regular-svg-icons";
+import { faCircleCheck, faCircleXmark, faStar } from "@fortawesome/free-regular-svg-icons";
 
 const Table = (props) => {
 	const { data } = props;

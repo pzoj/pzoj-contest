@@ -2,18 +2,18 @@ import Head from "next/head";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-function formatDate(time) {
-	// return in format HH:MM:SS
-	let hours = Math.floor(time / 3600);
-	time %= 3600;
-	let minutes = Math.floor(time / 60);
-	time %= 60;
-	let seconds = Math.floor(time);
-	let strhours = hours < 10 ? "0" + hours : hours;
-	let strminutes = minutes < 10 ? "0" + minutes : minutes;
-	let strseconds = seconds < 10 ? "0" + seconds : seconds;
-	return `${strhours}:${strminutes}:${strseconds}`;
-}
+// function formatDate(time) {
+// 	// return in format HH:MM:SS
+// 	let hours = Math.floor(time / 3600);
+// 	time %= 3600;
+// 	let minutes = Math.floor(time / 60);
+// 	time %= 60;
+// 	let seconds = Math.floor(time);
+// 	let strhours = hours < 10 ? "0" + hours : hours;
+// 	let strminutes = minutes < 10 ? "0" + minutes : minutes;
+// 	let strseconds = seconds < 10 ? "0" + seconds : seconds;
+// 	return `${strhours}:${strminutes}:${strseconds}`;
+// }
 
 export default () => {
 	return (

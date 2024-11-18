@@ -43,7 +43,7 @@ function judge(code_file, lang, dir, ws, jid) {
 	let mem = 0;
 	child.stdout.on('data', (chunk) => {
 		let lines = chunk.split('\n');
-		while (lines[lines.length-1] == "") lines.pop();
+		while (lines[lines.length-1] === "") lines.pop();
 		for (let i = 0; i < lines.length; i++) {
 			ws.send(`${lines[i]}`);
 			time += parseInt(lines[i].split(' ')[2]);
@@ -61,7 +61,9 @@ function judge(code_file, lang, dir, ws, jid) {
 			chdir(dir);
 			try {
 				fs.rmSync(code_file);
-			} catch {}
+			} catch (err) {
+				console.error(err); // probably ENOENT
+			}
 			chdir(c);
 			ws.send(`FIN ${getVerdict(code)} ${mem} ${time}`);
 			ws.close();

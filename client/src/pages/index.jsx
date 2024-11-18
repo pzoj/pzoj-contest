@@ -1,11 +1,7 @@
 import Head from "next/head";
 import Image from "next/image";
-import Dice from "@/components/Dice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useState, useEffect } from "react";
 
 export default () => {
 	return (

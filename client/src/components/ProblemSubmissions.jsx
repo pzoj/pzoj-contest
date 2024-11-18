@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 const ProblemSubmissions = (props) => {
     const ref = useRef(null);
@@ -25,7 +25,7 @@ const ProblemSubmissions = (props) => {
                     </tr>
                 </thead>
 
-				<h1 className={`text-center text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-sky-500 ${props.data.length == 0 ? "text-center" : "hidden"}`}>
+				<h1 className={`text-center text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-sky-500 ${props.data.length === 0 ? "text-center" : "hidden"}`}>
 					Pending judgement...
 				</h1>
 
@@ -35,9 +35,9 @@ const ProblemSubmissions = (props) => {
                             return (
                                 <tr key={idx} className={`text-center text-grey-1 ${idx & 1 && "bg-dark-2"}`}>
                                     <td className="py-3">{idx + 1}</td>
-                                    <td className="py-3">{test.verdict == "TLE" ? ">" : ""}{test.time / 1000}s</td>
+                                    <td className="py-3">{test.verdict === "TLE" ? ">" : ""}{test.time / 1000}s</td>
                                     <td className="py-3">{(test.memory / 1024).toFixed(2)}MB</td>
-                                    <td className={`py-3 ${test.verdict == "AC" ? "text-emerald-400" : "text-red-500"}`}>{test.verdict}</td>
+                                    <td className={`py-3 ${test.verdict === "AC" ? "text-emerald-400" : "text-red-500"}`}>{test.verdict}</td>
                                 </tr>
                             );
                         })
@@ -46,7 +46,7 @@ const ProblemSubmissions = (props) => {
                         <>
                             <tr className="text-2xl w-full text-center text-grey-1"><td>&nbsp;</td></tr>
                             <tr className="text-2xl w-full text-center text-grey-1">
-                                <td className="py-3">Verdict: <span className={`py-3 ${props.verdict == "AC" ? "text-emerald-400" : "text-red-500"}`}>{props.verdict}</span></td>
+                                <td className="py-3">Verdict: <span className={`py-3 ${props.verdict === "AC" ? "text-emerald-400" : "text-red-500"}`}>{props.verdict}</span></td>
                             </tr>
                         </>
                     ) : null}

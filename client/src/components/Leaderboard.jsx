@@ -1,8 +1,5 @@
-import React from 'react';
-import Table from './Table';
-
 const Leaderboard = ({ users }) => {
-	if (users.length == 0) return null;
+	if (users.length === 0) return null;
 
 	let rank = 1;
 	

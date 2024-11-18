@@ -6,7 +6,7 @@ import PrimaryButton from "@/components/button/PrimaryButton";
 import Footer from "@/components/Footer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShuffle, faSearch, faArrowRight } from "@fortawesome/free-solid-svg-icons";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 export default () => {
 	const [problems, setProblems] = useState([]);
@@ -104,12 +104,7 @@ export default () => {
 											});
 											setProblems(await Promise.all(problemList));
 										}).catch((err) => {
-											if (err.response.status === 500) {
-												// server died
-												return;
-											} else {
-												console.error(err);
-											}
+											console.error(err);
 										});
 									}}
 								/>

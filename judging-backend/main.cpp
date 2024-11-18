@@ -56,10 +56,7 @@
 #define C_ARGS "-O2", "-o"
 #define ASM_ARGS "-felf64"
 
-std::vector<std::string> input_files, output_files;
-
 typedef bool (*func_ptr)(std::string &, std::string &);
-func_ptr check;
 
 uint32_t get_memory(int pid) {
 	std::string path = "/proc/" + std::to_string(pid) + "/status";
@@ -315,6 +312,8 @@ int main(int argc, char *argv[]) {
 		time_limit *= 2;
 	}
 
+	func_ptr check;
+
 	if (checker == "identical") {
 		check = &identical_checker;
 	} else if (checker == "default") {
@@ -323,6 +322,8 @@ int main(int argc, char *argv[]) {
 		std::cerr << "unknown checker" << std::endl;
 		return IE;
 	}
+
+	std::vector<std::string> input_files, output_files;
 
 	std::string in, out;
 	int numcases = 0;

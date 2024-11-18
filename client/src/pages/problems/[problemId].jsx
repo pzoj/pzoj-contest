@@ -5,7 +5,7 @@ import CodeEditor from "@/components/CodeEditor";
 import ProblemStatement from "@/components/ProblemStatement";
 import ProblemSubmissions from "@/components/ProblemSubmissions";
 import Head from "next/head";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCode } from "@fortawesome/free-solid-svg-icons";
 
@@ -36,7 +36,7 @@ export default () => {
 	const [done, setDone] = useState(true);
 
     const handleOnChange = (newlang, newval) => {
-        if (newlang != lang) {
+        if (newlang !== lang) {
             setLang(newlang);
             setVal(localStorage.getItem(router.query.problemId + newlang));
             localStorage.setItem(problemId + "lang", newlang);
@@ -126,7 +126,7 @@ export default () => {
 								alert("Please wait for the current submission to finish before submitting again.");
 								return;
 							}
-							if (!val || val.length == 0) {
+							if (!val || val.length === 0) {
 								alert("Code is empty");
 								return;
 							}
@@ -134,7 +134,7 @@ export default () => {
                                 alert("Code too long");
                                 return;
                             }
-                            if (lang == "java" && !val.match(/(?:\s|\S)*public\s*class\s*Main\s*{/)) {
+                            if (lang === "java" && !val.match(/(?:\s|\S)*public\s*class\s*Main\s*{/)) {
                                 alert("Main class not found or it is not public. Make sure your class is named Main (with a capital M)");
                                 return;
                             }
@@ -166,7 +166,7 @@ export default () => {
                                     return;
                                 }
                                 msg = msg.split(" ");
-                                if (msg[0] == "FIN") {
+                                if (msg[0] === "FIN") {
                                     setVerdict(decodeURI(msg[1]));
 									setDone(true);
                                     return;

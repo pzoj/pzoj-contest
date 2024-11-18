@@ -7,7 +7,7 @@ const SecondaryButton = (props) => {
         <Link
             href={link}
             target={target}
-            rel={(target == "_blank") && "noopener noreferrer"}
+            rel={(target === "_blank") && "noopener noreferrer"}
             className={`border border-border text-grey-1 px-6 py-2 transition duration-200 hover:bg-border rounded-lg ${fullWidth && "w-full"}`}
             onClick={onClick}
         >   

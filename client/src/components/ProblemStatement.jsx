@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
-export default (props) => {
+export default () => {
 	const router = useRouter();
 	const [showLimits, setShowLimits] = useState(true);
 	const [showTags, setShowTags] = useState(false);
@@ -61,7 +61,7 @@ export default (props) => {
 				<div>
 					<div
 						className="flex flex-row justify-between items-center cursor-pointer mb-2 group"
-						onClick={(e) => {
+						onClick={() => {
 							setShowLimits((prev) => !prev);
 						}}
 					>
@@ -86,7 +86,7 @@ export default (props) => {
 				<div>
 					<div
 						className="flex flex-row justify-between items-center cursor-pointer mb-2 group"
-						onClick={(e) => {
+						onClick={() => {
 							setShowTags((prev) => !prev);
 						}}
 					>
