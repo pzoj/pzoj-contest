@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 		return IE;
 	}
 
-	if (chdir("/tmp")) {
+	if (chdir("/tmp") != 0) {
 		std::cerr << "failed to chdir" << std::endl;
 		return IE;
 	}
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = 5;
 			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set compiler time limit" << std::endl;
 				return IE;
 			}
@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = 5;
 			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set compiler time limit" << std::endl;
 				return IE;
 			}
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = 5;
 			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set compiler time limit" << std::endl;
 				return IE;
 			}
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = 5;
 			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set compiler time limit" << std::endl;
 				return IE;
 			}
@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = 5;
 			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set compiler time limit" << std::endl;
 				return IE;
 			}
@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
 			struct rlimit rlim;
 			rlim.rlim_cur = (time_limit + 999) / 1000; // round up to the next second so we dont prematurely kill processes with decimal TLs
 			rlim.rlim_max = (time_limit + 999) / 1000 + 1;
-			if (setrlimit(RLIMIT_CPU, &rlim)) {
+			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
 				std::cerr << "failed to set time limit" << std::endl;
 				return IE;
 			}
@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
 			if (run_cmd != "java") {
 				rlim.rlim_cur = 1024 * 1024 * 1024;
 				rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
-				if (setrlimit(RLIMIT_AS, &rlim)) {
+				if (setrlimit(RLIMIT_AS, &rlim) != 0) {
 					std::cerr << "failed to set memory limit" << std::endl;
 					return IE;
 				}
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
 
 			rlim.rlim_cur = 16777216;
 			rlim.rlim_max = 16777216;
-			if (setrlimit(RLIMIT_FSIZE, &rlim)) {
+			if (setrlimit(RLIMIT_FSIZE, &rlim) != 0) {
 				std::cerr << "failed to set output limit" << std::endl;
 				return IE;
 			}
@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
 
 			umask(0);
 
-			if (setgid(65534) || setuid(65534)) {
+			if ((setgid(65534) != 0) || (setuid(65534) != 0)) {
 				std::cerr << "failed to drop privileges" << std::endl;
 				return IE;
 			}
@@ -389,7 +389,7 @@ int main(int argc, char *argv[]) {
 		} else if (pid > 0) {
 			// parent
 			uint32_t chld_time = 0, chld_mem = 0;
-			while (1) {
+			while (true) {
 				int status;
 				waitpid(pid, &status, 0);
 				if (WIFEXITED(status)) {

@@ -6,25 +6,25 @@ inline bool is_whitespace(char c) {
 
 bool default_checker(std::string &output, std::string &expected_output) {
 	int p = 0, p2 = 0;
-	bool expspace = 1, outspace = 1;
+	bool expspace = true, outspace = true;
 	while (p < expected_output.size()) {
 		while (p < expected_output.size() && is_whitespace(expected_output[p])) {
 			p++;
-			expspace = 1;
+			expspace = true;
 		}
 		while (p2 < output.size() && is_whitespace(output[p2])) {
 			p2++;
-			outspace = 1;
+			outspace = true;
 		}
-		if (expspace != outspace && p < expected_output.size() && p2 < output.size()) return 0;
-		if (p >= expected_output.size() && p2 >= output.size()) return 1;
-		else if (p >= expected_output.size() != p2 >= output.size()) return 0;
-		if (output[p2] != expected_output[p]) return 0;
+		if (expspace != outspace && p < expected_output.size() && p2 < output.size()) return false;
+		if (p >= expected_output.size() && p2 >= output.size()) return true;
+		else if (p >= expected_output.size() != p2 >= output.size()) return false;
+		if (output[p2] != expected_output[p]) return false;
 		p++, p2++;
-		expspace = 0;
-		outspace = 0;
+		expspace = false;
+		outspace = false;
 	}
-	return 1;
+	return true;
 }
 
 bool identical_checker(std::string &output, std::string &expected_output) {
