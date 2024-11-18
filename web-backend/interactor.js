@@ -62,7 +62,9 @@ function judge(code_file, lang, dir, ws, jid) {
 			try {
 				fs.rmSync(code_file);
 			} catch (err) {
-				console.error(err); // probably ENOENT
+				if (err.code !== 'ENOENT') {
+					console.error(err);
+				}
 			}
 			chdir(c);
 			ws.send(`FIN ${getVerdict(code)} ${mem} ${time}`);

@@ -1,11 +1,11 @@
 #include <cerrno>
 #include <fstream>
 #include <iostream>
-#include <seccomp.h>
 #include <csignal>
 #include <sstream>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <sys/mman.h>
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
-	} else if (strncmp(argv[1], "asm", 4) == 0) {
+	} else if (strncmp(argv[1], "asm", 3) == 0) {
 		run_cmd = "./" + judge_id;
 		// assemble program
 		pid_t pid = fork();
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
 		return IE;
 	}
 
-	if (strncmp(argv[1], "py", 3) == 0) {
+	if (strncmp(argv[1], "py", 2) == 0) {
 		time_limit *= 2;
 	}
 
