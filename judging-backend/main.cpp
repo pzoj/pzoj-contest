@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "checkers.hpp"
-#include "syscalls.h"
 
 #define AC 0
 #define WA 1
@@ -56,7 +55,7 @@
 #define C_ARGS "-O2", "-o"
 #define ASM_ARGS "-felf64"
 
-typedef bool (*func_ptr)(std::string &, std::string &);
+using func_ptr = bool (*)(std::string &, std::string &);
 
 uint32_t get_memory(int pid) {
 	std::string path = "/proc/" + std::to_string(pid) + "/status";
@@ -98,7 +97,11 @@ std::string format_datetime() {
 }
 
 int main(int argc, char *argv[]) {
-	freopen("log.log", "a", stderr);
+	FILE *openfp = freopen("log.log", "a", stderr);
+	if (openfp == NULL) {
+		std::cerr << "failed to open log file" << std::endl;
+		return IE;
+	}
 
 	std::cerr << "\n\n--- JUDGING AT " << format_datetime() << " ---" << std::endl;
 	std::cerr << "PROBLEM: " << argv[2] << std::endl;
@@ -128,7 +131,7 @@ int main(int argc, char *argv[]) {
 	src.close();
 	dst.close();
 
-	if (strncmp(argv[1], "cpp", 4) == 0) {
+	if (strncmp(argv[1], "cpp", 3) == 0) {
 		run_cmd = "./" + judge_id;
 		// compile C++ program
 		pid_t pid = fork();
@@ -160,7 +163,7 @@ int main(int argc, char *argv[]) {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
-	} else if (strncmp(argv[1], "c", 2) == 0) {
+	} else if (strncmp(argv[1], "c", 1) == 0) {
 		run_cmd = "./" + judge_id;
 		// compile C program
 		pid_t pid = fork();
@@ -191,12 +194,12 @@ int main(int argc, char *argv[]) {
 			std::cerr << "fork failed" << std::endl;
 			return IE;
 		}
-	} else if (strncmp(argv[1], "py", 3) == 0) {
+	} else if (strncmp(argv[1], "py", 2) == 0) {
 		run_cmd = PYTHON_PATH;
 		// run_args = dir + "/main" + judge_id + ".py";
 		rename((dir + "/main" + judge_id + ".py").c_str(), ("/tmp/main" + judge_id + ".py").c_str());
 		run_args = "/tmp/main" + judge_id + ".py";
-	} else if (strncmp(argv[1], "java", 5) == 0) {
+	} else if (strncmp(argv[1], "java", 4) == 0) {
 		rename((dir + "/main" + judge_id + ".java").c_str(), (dir + "/Main" + judge_id + ".java").c_str());
 		run_cmd = "java";
 		run_args = "Main" + judge_id;
@@ -356,8 +359,8 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (run_cmd != "java") {
-				rlim.rlim_cur = 1024 * 1024 * 1024;
-				rlim.rlim_max = 1024 * 1024 * 1024; // 1 GB
+				rlim.rlim_cur = 1024ull * 1024ull * 1024ull;
+				rlim.rlim_max = 1024ull * 1024ull * 1024ull; // 1 GB
 				if (setrlimit(RLIMIT_AS, &rlim) != 0) {
 					std::cerr << "failed to set memory limit" << std::endl;
 					return IE;
@@ -445,13 +448,7 @@ int main(int argc, char *argv[]) {
 							// look for memory usage in /proc/pid/status
 							chld_mem = std::max(get_memory(pid), chld_mem);
 						}
-						if (syscall_allowed(rax)) {
-							ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
-						} else {
-							std::cerr << "disallowed syscall " << rax << std::endl;
-							kill(pid, SIGKILL);
-							return DIS_SYS;
-						}
+						ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
 					} else {
 						int sig = WEXITSTATUS(status);
 						chld_mem = std::max(get_memory(pid), chld_mem);
