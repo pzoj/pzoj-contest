@@ -61,13 +61,34 @@ function verifyToken(token) {
 	return token.username;
 }
 
+function in_contest(token) {
+	if (token == undefined)
+		return null;
+	let username = verifyToken(token);
+	if (username == null)
+		return null;
+	let curtime = new Date().getTime() / 1000;
+	let contestid = null;
+	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
+		// contestend is the unix timestamp of the end of the contest (or null if not in contest)
+		// if contestend is not null, the contestid is the id of the contest
+		if (row.contestend == null)
+			contestid = null;
+		else if (row.contestend <= curtime)
+			contestid = null;
+		else
+			contestid = row.contestid;
+		// this should only run once so it's fine
+	});
+	return contestid;
+}
+
 let ips = {};
 
 app.post('/api/login', (req, res) => {
 	let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 	if (ips[ip] == undefined) {
 		ips[ip] = 0;
-		console.log(ip);
 	} else {
 		ips[ip]++;
 	}
@@ -121,22 +142,7 @@ app.get('/api/logout', (req, res) => {
 });
 
 app.post('/api/register', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username != "admin") {
-		res.end();
-		return;
-	}
-	
-	username = req.body.username;
+	let username = req.body.username;
 	let password = req.body.password;
 	db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
 		if (err) {
@@ -178,42 +184,22 @@ app.post('/api/register', (req, res) => {
 	});
 });
 
-app.get('/api/resetaccounts', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username != "admin") {
-		res.end();
-		return;
-	}
-	// clear all users except admin
-	db.run('DELETE FROM users WHERE username != "admin"', [], (err) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
-			return;
-		}
-		res.send('ok');
-	});
-});
-
 const allowedLanguages = ["cpp", "c", "py", "java", "asm"];
 
 /* ------------------ CONTESTS ------------------ */
 
-let leaderboard = [];
-let starttime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[1]);
-let endtime = parseInt(fs.readFileSync(path.join('..', 'contests', 'meta.txt')).toString().split('\n')[2]);
+let problems = []; // [pid, title, difficulty, tag, [[maybe]] contestid]
 
-app.get('/api/contest', (req, res) => {
+function updateProblems() {
+	problems = [];
+	fs.readdirSync(path.join('..', 'problems')).forEach((file) => {
+		if (file.startsWith('.'))
+			return;
+		problems.push([file, ...fs.readFileSync(path.join('..', 'problems', file, 'meta.txt')).toString().split('\n')]);
+	});
+}
+
+app.get('/api/contest/:cid', (req, res) => {
 	if (req.cookies == undefined) {
 		res.end();
 		return;
@@ -229,7 +215,14 @@ app.get('/api/contest', (req, res) => {
 		return;
 	}
 
-	let contest_path = path.join(cwd(), '..', 'contests');
+	// check if contest exists
+	let contest_path = path.join(cwd(), '..', 'contests', req.params.cid);
+	if (!fs.existsSync(contest_path)) {
+		res.status(404);
+		res.end();
+		return;
+	}
+
 	fs.readFile(path.join(contest_path, 'contest.md'), (err, data) => {
 		if (err) {
 			console.error(err);
@@ -243,7 +236,7 @@ app.get('/api/contest', (req, res) => {
 	});
 });
 
-app.get('/api/contest/meta', (req, res) => {
+app.get('/api/contest/:cid/meta', (req, res) => {
 	if (req.cookies == undefined) {
 		res.end();
 		return;
@@ -259,7 +252,7 @@ app.get('/api/contest/meta', (req, res) => {
 		return;
 	}
 
-	let contest_path = path.join(cwd(), '..', 'contests');
+	let contest_path = path.join(cwd(), '..', 'contests', req.params.cid);
 	fs.readFile(path.join(contest_path, 'meta.txt'), (err, data) => {
 		if (err) {
 			console.error(err);
@@ -279,105 +272,52 @@ app.get('/api/contest/meta', (req, res) => {
 	});
 });
 
-app.get('/api/contest/leaderboard', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username == null) {
-		res.end();
-		return;
-	}
-
-	// return the leaderboard but sorted
-	leaderboard.sort((a, b) => {
-		if (a.points < b.points)
-			return 1;
-		else if (a.points > b.points)
-			return -1;
-		else if (a.penaltytime < b.penaltytime)
-			return -1;
-		else if (a.penaltytime > b.penaltytime)
-			return 1;
-		else
-			return 0;
-	});
-	res.send(leaderboard);
+app.get('/api/contest/:cid/leaderboard', (req, res) => {
+	res.send('not implemented');
 });
 
 app.get('/api/problems', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username == null) {
-		res.end();
-		return;
-	}
-	// compare current time and contest start time
-	let curtime = Math.floor(Date.now() / 1000);
-	if (curtime < starttime || curtime > endtime) {
-		res.end();
-		return;
-	}
-
-	let problems = [];
-	fs.readdir(path.join('..', 'problems'), (err, files) => {
-		if (err) {
-			console.error(err);
-			res.status(500);
-			res.end();
-			return;
+	let tok = req.cookies['token'];
+	let contest = in_contest(tok);
+	let ret = [];
+	problems.forEach((problem) => {
+		if (contest) {
+			if (problem.length < 5 || problem[4] != contest) return;
 		}
-		files.forEach((file) => {
-			if (file.startsWith('.')) return;
-			let tmp = [
-				file,
-				...fs.readFileSync(path.join('..', 'problems', file, 'meta.txt')).toString().split('\n')
-			];
-			problems.push({
-				pid: tmp[0],
-				title: tmp[1],
-				difficulty: tmp[2],
-				tag: tmp[3],
-			});
+		ret.push({
+			pid: problem[0],
+			title: problem[1],
+			difficulty: problem[2],
+			tag: problem[3]
 		});
-		res.send(JSON.stringify(problems));
 	});
+	res.send(JSON.stringify(ret));
 });
 
 app.get('/api/problem/:pid', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username == null) {
+	let pid = req.params.pid;
+	let obj = problems.find((e) => e[0] == pid);
+	if (obj == undefined) {
+		res.status(404);
 		res.end();
 		return;
 	}
 
-	let curtime = Math.floor(Date.now() / 1000);
-	if (curtime < starttime || curtime > endtime) {
-		res.end();
-		return;
+	let tok = req.cookies['token'];
+	let contest = in_contest(tok);
+	if (contest) {
+		if (obj.length < 5 || obj[4] != contest) {
+			res.status(404);
+			res.end();
+			return;
+		}
+	} else {
+		// not in contest, therefore only allow problems that are not in contests
+		if (obj.length >= 5 && obj[4] != "") {
+			res.status(404);
+			res.end();
+			return;
+		}
 	}
 
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
@@ -395,25 +335,28 @@ app.get('/api/problem/:pid', (req, res) => {
 });
 
 app.get('/api/problem/:pid/meta', (req, res) => {
-	if (req.cookies == undefined) {
-		res.end();
-		return;
-	}
-	let username = req.cookies['token'];
-	if (username == undefined) {
-		res.end();
-		return;
-	}
-	username = verifyToken(username);
-	if (username == null) {
+	let pid = req.params.pid;
+	let obj = problems.find((e) => e[0] == pid);
+	if (obj == undefined) {
+		res.status(404);
 		res.end();
 		return;
 	}
 
-	let curtime = Math.floor(Date.now() / 1000);
-	if (curtime < starttime || curtime > endtime) {
-		res.end();
-		return;
+	let tok = req.cookies['token'];
+	let contest = in_contest(tok);
+	if (contest) {
+		if (obj.length < 5 || obj[4] != contest) {
+			res.status(404);
+			res.end();
+			return;
+		}
+	} else {
+		if (obj.length >= 5 && obj[4] != "") {
+			res.status(404);
+			res.end();
+			return;
+		}
 	}
 
 	let problem_path = path.join(cwd(), '..', 'problems', req.params.pid);
@@ -437,6 +380,7 @@ app.get('/api/problem/:pid/meta', (req, res) => {
 			});
 		});
 	});
+	// note: this function is very terrible and should be refactored
 });
 
 app.get('/api/problem/:pid/status', (req, res) => {
@@ -491,68 +435,7 @@ app.get('/api/resetleaderboard', (req, res) => {
 });
 
 function resetleaderboard() {
-	leaderboard = [];
-	let problems = [];
-	fs.readdirSync(path.join(cwd(), '..', 'problems')).forEach((file) => {
-		if (file.startsWith('.'))
-			return;
-		problems.push([file, 0]);
-		// get difficulty of problem
-		problems[problems.length - 1][1] = parseInt(fs.readFileSync(path.join(cwd(), '..', 'problems', file, 'meta.txt')).toString().split('\n')[1]);
-	});
-	db.serialize(() => {
-		db.run('BEGIN IMMEDIATE TRANSACTION'); // ignore admin
-		db.all('SELECT * FROM users WHERE username != "admin"', [], (err, rows) => {
-			if (err) {
-				console.error(err);
-				db.run('ROLLBACK');
-				res.status(500);
-				res.end();
-				return;
-			}
-			rows.forEach((row) => {
-				leaderboard.push({
-					'username': row.username,
-					'points': 0,
-					'penaltytime': 0,
-					'problems': {}
-				});
-				problems.forEach((problem) => {
-					leaderboard[leaderboard.length - 1].problems[problem[0]] = {score: 0, penalty: 0, difficulty: problem[1]};
-				});
-			});
-		});
-		db.run('COMMIT');
-	});
-	db.serialize(() => {
-		db.run('BEGIN IMMEDIATE TRANSACTION');
-		db.all('SELECT * FROM submissions WHERE username != "admin" ORDER BY timestamp ASC', [], (err, rows) => {
-			if (err) {
-				console.error(err);
-				db.run('ROLLBACK');
-				res.status(500);
-				res.end();
-				return;
-			}
-			rows.forEach((row) => {
-				let userindex = leaderboard.findIndex((e) => e.username == row.username);
-				if (leaderboard[userindex].problems[row.problemid].score) {
-					return; // skip if already AC
-				}
-				if (row.result == 'AC') {
-					leaderboard[userindex].problems[row.problemid].score = leaderboard[userindex].problems[row.problemid].penalty+1;
-					leaderboard[userindex].problems[row.problemid].penalty *= 10;
-					leaderboard[userindex].penaltytime += leaderboard[userindex].problems[row.problemid].penalty + Math.floor(row.timestamp / 60 - starttime / 60);
-					leaderboard[userindex].problems[row.problemid].penalty = Math.floor(row.timestamp / 60 - starttime / 60);
-					leaderboard[userindex].points += 100;
-				} else if (row.result != 'CE') {
-					leaderboard[userindex].problems[row.problemid].score = 0;
-					leaderboard[userindex].problems[row.problemid].penalty += 1;
-				}
-			});
-		});
-		db.run('COMMIT');
-	});
+	return "not implemented";
 }
 
 /* ------------------ ADMIN PANEL ------------------ */
@@ -605,6 +488,26 @@ app.get('/api/resetsubmissions', (req, res) => {
 	});
 });
 
+app.get('/api/updateproblems', (req, res) => {
+	if (req.cookies == undefined) {
+		res.end();
+		return;
+	}
+	let username = req.cookies['token'];
+	if (username == undefined) {
+		res.end();
+		return;
+	}
+	username = verifyToken(username);
+	if (username != "admin") {
+		res.end();
+		return;
+	}
+
+	updateProblems();
+	res.send('ok');
+});
+
 /* ------------------ SUBMISSIONS ------------------ */
 
 const wss = new ws.Server({ port: 3002 });
@@ -620,11 +523,32 @@ wss.on('connection', (ws) => {
 			ws.close();
 			return;
 		}
-		if (subtime < starttime || subtime > endtime) {
-			ws.send('errorContestnotactive');
+		
+		let pid = data.pid;
+		if (!problems.map(e => e[0]).includes(pid)) {
+			ws.send('errorInvalidproblem');
 			ws.close();
 			return;
 		}
+
+		if (in_contest(token) == null) {
+			// not in contest; check if problem is in contest
+			let obj = problems.find((e) => e[0] == pid);
+			if (obj.length >= 5 && obj[4] != "") {
+				ws.send('errorInvalidproblem');
+				ws.close();
+				return;
+			}
+		} else {
+			// in contest; check if problem is in contest
+			let obj = problems.find((e) => e[0] == pid);
+			if (obj.length < 5 || obj[4] != in_contest(token)) {
+				ws.send('errorInvalidproblem');
+				ws.close();
+				return;
+			}
+		}
+
 		let filecontent = data.code;
 		let lang = data.lang;
 		// jid should be random string of length 10
@@ -671,38 +595,7 @@ wss.on('connection', (ws) => {
 					db.run('COMMIT');
 				});
 			});
-			if (leaderboard.filter((e) => e.username == user).length == 0) {
-				leaderboard.push({
-					'username': user,
-					'points': 0,
-					'penaltytime': 0,
-					'problems': {}
-				});
-				fs.readdirSync(path.join(cwd(), '..', 'problems')).forEach((file) => {
-					if (file.startsWith('.'))
-						return;
-					leaderboard[leaderboard.length - 1].problems[file] = {score: 0, penalty: 0};
-				});
-			}
-			if (res[res.length - 1].startsWith('AC')) {
-				// update leaderboard
-				let userindex = leaderboard.findIndex((e) => e.username == user);
-				if (leaderboard[userindex].problems[data.pid].score)
-					return;
-				leaderboard[userindex].problems[data.pid].score = leaderboard[userindex].problems[data.pid].penalty+1;
-				// existing penalty is # of wrong submissions
-				leaderboard[userindex].problems[data.pid].penalty *= 10;
-				leaderboard[userindex].penaltytime += leaderboard[userindex].problems[data.pid].penalty + Math.floor(subtime / 60 - starttime / 60);
-				leaderboard[userindex].problems[data.pid].penalty = Math.floor(subtime / 60 - starttime / 60);
-				leaderboard[userindex].points += 100;
-			} else if (!res[res.length - 1].startsWith('CE')) {
-				let userindex = leaderboard.findIndex((e) => e.username == user);
-				if (leaderboard[userindex].problems[data.pid].score)
-					return;
-				leaderboard[userindex].problems[data.pid].score = 0;
-				leaderboard[userindex].problems[data.pid].penalty += 1; // indicate a wrong submission
-				// only add penalty if AC later
-			}
+			// TODO: implement leaderboard
 		});
 	});
 });
@@ -712,4 +605,6 @@ wss.on('connection', (ws) => {
 app.listen(3001, () => {
 	console.log(`Server started on port 3001`);
 	resetleaderboard();
+	updateProblems();
+	setInterval(updateProblems, 1000 * 60 * 60);
 });

@@ -1,8 +1,7 @@
 TODO:
 - Fix the hosting script to redirect logs to a file
 - Update docs to reflect the new build and hosting process
-- Prettify the live leaderboard page
-	- When a user submits, their box turns into a ? and then updates with their score
-	- If they go up a place, it plays an animation showing them moving up
-- potentially put submissions in /tmp instead of the problem dir
+- Rewrite the live leaderboard system
 - rate limit submissions per user
+- generator support
+- better sandboxing w/ docker

@@ -21,6 +21,8 @@
 
 	<button id="reset-submissions">Reset Submissions</button>
 
+	<button id="update-problems">Update Problems</button>
+
 	<a id="message"></a>
 	
 	<script>
@@ -77,6 +79,16 @@
 				alert('Error resetting submissions');
 			} else {
 				document.getElementById('message').textContent = 'Submissions reset';
+			}
+		});
+
+		document.getElementById('update-problems').addEventListener('click', async () => {
+			const response = await fetch('/api/updateproblems');
+			// if response is not ok, alert error message
+			if (!response.ok) {
+				alert('Error updating problems');
+			} else {
+				document.getElementById('message').textContent = 'Problems updated';
 			}
 		});
 	</script>

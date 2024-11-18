@@ -24,11 +24,19 @@ export default (props) => {
 			setTime(parseInt(res.data.time) / 1000);
 			setMemory(parseInt(res.data.memory));
 		}).catch((err) => {
+			if (err.response.status === 404) {
+				router.push("/404");
+				return;
+			}
 			console.error(err);
 		});
 		axios.get(`/api/problem/${problemId}`).then((res) => {
 			setContent(res.data);
 		}).catch((err) => {
+			if (err.response.status === 404) {
+				router.push("/404");
+				return;
+			}
 			console.error(err);
 		});
 	}, [router]);

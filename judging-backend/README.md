@@ -14,6 +14,7 @@
 	- formatted name of problem
 	- problem stars
 	- problem tag
+	- nothing if problem is public, otherwise [contest_id] of contest problem is in
 
 - web backend MUST remove code_file after judging
 - everything else goes into /tmp so maybe clear that out every once in a while

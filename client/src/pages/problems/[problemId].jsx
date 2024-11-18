@@ -28,9 +28,6 @@ export default () => {
     const [problemSubmit, setProblemSubmit] = useState(false);
     const [problemStatement, setProblemStatement] = useState(true);
 
-    const [expanded, setExpanded] = useState(false);
-    const [direction, setDirection] = useState(0); // 0 means next click should be clockwise; 1 means next click should be counter clockwise
-
     const [val, setVal] = useState("");
     const [lang, setLang] = useState("cpp");
 
