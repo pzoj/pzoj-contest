@@ -69,7 +69,10 @@ uint32_t get_memory(int pid) {
 	int mem;
 	while (getline(f, buf)) {
 		if (strncmp(buf.c_str(), "VmHWM:", 6) == 0) {
-			if (sscanf(buf.c_str(), "VmHWM: %d kB ", &mem) != 1) {
+			// if (sscanf(buf.c_str(), "VmHWM: %d kB ", &mem) != 1) {
+			char *end;
+			mem = strtol(buf.c_str() + 6, &end, 10);
+			if (end == buf.c_str() + 6) {
 				std::cerr << "failed to read memory usage" << std::endl;
 				return IE;
 			}
@@ -359,8 +362,8 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (run_cmd != "java") {
-				rlim.rlim_cur = 1024ull * 1024ull * 1024ull;
-				rlim.rlim_max = 1024ull * 1024ull * 1024ull; // 1 GB
+				rlim.rlim_cur = 1024ULL * 1024ULL * 1024ULL;
+				rlim.rlim_max = 1024ULL * 1024ULL * 1024ULL; // 1 GB
 				if (setrlimit(RLIMIT_AS, &rlim) != 0) {
 					std::cerr << "failed to set memory limit" << std::endl;
 					return IE;
