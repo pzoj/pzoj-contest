@@ -33,7 +33,6 @@ const CodeEditor = (props) => {
                     <option value="c">GNU C11</option>
                     <option value="py">Python3</option>
                     <option value="java">Java</option>
-                    <option value="asm">NASM64</option>
                 </select>
             </div>
 
