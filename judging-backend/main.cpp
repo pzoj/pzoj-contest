@@ -45,15 +45,11 @@
 #ifndef C_PATH
 #define C_PATH "/usr/bin/gcc"
 #endif
-#ifndef ASM_PATH
-#define ASM_PATH "/usr/bin/nasm"
-#endif
 // #ifndef PYTHON_PATH
 #define PYTHON_PATH "/usr/bin/pypy3"
 // #endif
 #define CXX_ARGS "-O2", "-std=c++20"
 #define C_ARGS "-O2", "-o"
-#define ASM_ARGS "-felf64"
 
 using func_ptr = bool (*)(std::string &, std::string &);
 
@@ -231,67 +227,6 @@ int main(int argc, char *argv[]) {
 				return CE;
 			}
 			rename((dir + "/Main" + judge_id + ".java").c_str(), (dir + "/main" + judge_id + ".java").c_str()); // dno't question it
-		} else {
-			std::cerr << "fork failed" << std::endl;
-			return IE;
-		}
-	} else if (strncmp(argv[1], "asm", 3) == 0) {
-		run_cmd = "./" + judge_id;
-		// assemble program
-		pid_t pid = fork();
-		if (pid == 0) {
-			// child process
-			struct rlimit rlim;
-			rlim.rlim_cur = 5;
-			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
-				std::cerr << "failed to set compiler time limit" << std::endl;
-				return IE;
-			}
-
-			execl(ASM_PATH, ASM_PATH, (dir + "/main" + judge_id + ".asm").c_str(), ASM_ARGS, "-o", (judge_id + ".o").c_str(), NULL);
-		} else if (pid > 0) {
-			// parent process
-			int status;
-			waitpid(pid, &status, 0);
-			if (WIFEXITED(status)) {
-				if (WEXITSTATUS(status) != 0) {
-					return CE;
-				}
-			} else {
-				std::cerr << "sedimentation terminated abnormally" << std::endl;
-				return CE;
-			}
-		} else {
-			std::cerr << "fork failed" << std::endl;
-			return IE;
-		}
-
-		// link program
-		pid = fork();
-		if (pid == 0) {
-			// child process
-			struct rlimit rlim;
-			rlim.rlim_cur = 5;
-			rlim.rlim_max = 5;
-			if (setrlimit(RLIMIT_CPU, &rlim) != 0) {
-				std::cerr << "failed to set compiler time limit" << std::endl;
-				return IE;
-			}
-
-			execl("/usr/bin/ld", "/usr/bin/ld", (judge_id + ".o").c_str(), "-o", judge_id.c_str(), NULL);
-		} else if (pid > 0) {
-			// parent process
-			int status;
-			waitpid(pid, &status, 0);
-			if (WIFEXITED(status)) {
-				if (WEXITSTATUS(status) != 0) {
-					return CE;
-				}
-			} else {
-				std::cerr << "linker terminated abnormally" << std::endl;
-				return CE;
-			}
 		} else {
 			std::cerr << "fork failed" << std::endl;
 			return IE;

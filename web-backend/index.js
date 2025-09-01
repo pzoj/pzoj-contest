@@ -184,7 +184,7 @@ app.post('/api/register', (req, res) => {
 	});
 });
 
-const allowedLanguages = ["cpp", "c", "py", "java", "asm"];
+const allowedLanguages = ["cpp", "c", "py", "java"];
 
 /* ------------------ CONTESTS ------------------ */
 
